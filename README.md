@@ -3,7 +3,7 @@ To successfully run this project use the below given commands.
 
 Prerequisites
 Before running this project, you need the following software installed on your system:
-Python
+Python 
 Git
 
 git clone https://github.com/Keerthivarman07/Student_Project_Management
