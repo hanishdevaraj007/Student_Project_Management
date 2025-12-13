@@ -33,4 +33,5 @@ urlpatterns = [
         core_views.respond_invite,
         name="respond_invite",
     ),
+    path("student/team/create/", core_views.create_team_view, name="create_team"),
 ]
