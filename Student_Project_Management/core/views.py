@@ -3,8 +3,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
+from .models import User, StudentProfile, Invitation, Team, ProjectProposal
 from django.db import models
-from .models import User, StudentProfile, Invitation, Team
 
 
 def home(request):
@@ -316,3 +316,51 @@ def create_team_view(request):
         "accepted_invites":accepted_invites,
     })
 
+@login_required
+def proposal_view(request):
+    user: User = request.user
+    if user.user_type != User.UserType.STUDENT:
+        return redirect("dashboard_redirect")
+
+    student = StudentProfile.objects.get(user=user)
+
+    # must be in a team
+    team = Team.objects.filter(team_leader=student).first()
+    if team is None:
+        team = Team.objects.filter(members=student).first()
+
+    if team is None:
+        messages.error(request, "You must be in a team to submit a proposal.")
+        return redirect("student_dashboard")
+
+    # only TL can edit; members can only view
+    is_leader = (team.team_leader_id == student.id)
+
+    proposal, created = ProjectProposal.objects.get_or_create(team=team)
+
+    if request.method == "POST":
+        if not is_leader:
+            messages.error(request, "Only the team leader can edit the proposal.")
+            return redirect("proposal")
+
+        title = request.POST.get("title", "").strip()
+        problem = request.POST.get("problem_statement", "").strip()
+
+        if not title or not problem:
+            messages.error(request, "Title and problem statement are required.")
+            return redirect("proposal")
+
+        proposal.title = title
+        proposal.problem_statement = problem
+        proposal.status = ProjectProposal.Status.PENDING
+        proposal.save()
+
+        messages.success(request, "Proposal saved.")
+        return redirect("proposal")
+
+    context = {
+        "team": team,
+        "proposal": proposal,
+        "is_leader": is_leader,
+    }
+    return render(request, "dashboards/proposal.html", context)

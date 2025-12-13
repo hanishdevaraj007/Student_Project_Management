@@ -123,6 +123,17 @@
                             Pending approval
                         {% endif %}
                     </p>
+
+                    {% if team.team_leader_id == student.id %}
+                        <a href="{% url 'proposal' %}" class="btn btn-sm btn-primary mt-2">
+                            Edit proposal
+                        </a>
+                    {% else %}
+                        <a href="{% url 'proposal' %}" class="btn btn-sm btn-outline-secondary mt-2">
+                            View proposal
+                        </a>
+                    {% endif %}
+
                 {% else %}
                     {% if can_create_team %}
                         <a href="{% url 'create_team' %}" class="btn btn-primary mb-2">

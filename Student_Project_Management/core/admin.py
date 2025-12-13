@@ -6,6 +6,7 @@ from django.contrib.auth.admin import UserAdmin
 from .models import User
 
 from .models import Department, Batch, ClassSection, FacultyProfile, StudentProfile
+from .models import ProjectProposal
 
 from .models import Team, Invitation, ProjectProposal
 
@@ -19,8 +20,6 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ("Role information", {"fields": ("user_type",)}),
     )
-
-
 
 
 @admin.register(Department)
@@ -67,4 +66,5 @@ class InvitationAdmin(admin.ModelAdmin):
 @admin.register(ProjectProposal)
 class ProjectProposalAdmin(admin.ModelAdmin):
     list_display = ("title", "team", "status", "preferred_mentor", "created_at")
-    list_filter = ("status", "team__department")
+    list_filter = ("status", "team__department","team__batch")
+    search_filter = ("title","team__name")

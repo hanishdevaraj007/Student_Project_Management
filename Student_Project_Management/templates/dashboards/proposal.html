@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Project Proposal{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Project Proposal</h3>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<p class="mb-2"><strong>Team:</strong> {{ team.name }}</p>
+
+{% if is_leader %}
+<form method="post">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input type="text" name="title" class="form-control"
+               value="{{ proposal.title }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Problem statement</label>
+        <textarea name="problem_statement" rows="5"
+                  class="form-control" required>{{ proposal.problem_statement }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save proposal</button>
+    <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">Back</a>
+</form>
+{% else %}
+    <p><strong>Title:</strong> {{ proposal.title|default:"Not set" }}</p>
+    <p><strong>Problem statement:</strong></p>
+    <p>{{ proposal.problem_statement|default:"Not set" }}</p>
+    <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">Back</a>
+{% endif %}
+{% endblock %}
