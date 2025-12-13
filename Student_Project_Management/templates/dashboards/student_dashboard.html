@@ -102,23 +102,53 @@
             <div class="card-body">
                 <h5 class="card-title">My Team</h5>
 
-                {% if can_create_team %}
-                    <a href="#" class="btn btn-primary">
-                        Create Team (coming soon)
-                    </a>
-                {% else %}
-                    <button class="btn btn-secondary" disabled>
-                        Create Team (need 3 accepted invites)
-                    </button>
-                {% endif %}
+                {% if team %}
+                    <p class="mb-1"><strong>Name:</strong> {{ team.name }}</p>
+                    <p class="mb-1">
+                        <strong>Members:</strong>
+                        {% for member in team.members.all %}
+                            {% if member.id == student.id %}
+                                {{ member.user.get_full_name|default:member.user.username }} (You{% if team.team_leader_id == member.id %}, TL{% endif %})
+                            {% else %}
+                                {{ member.user.get_full_name|default:member.user.username }}{% if team.team_leader_id == member.id %} (TL){% endif %}
+                            {% endif %}
+                            {% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Status:</strong>
+                        {% if team.is_approved %}
+                            Approved
+                        {% else %}
+                            Pending approval
+                        {% endif %}
+                    </p>
 
-                <p class="text-muted mb-0 mt-2">
-                    Team details and proposal form will be added here.
-                </p>
+                    {% if team.team_leader_id == student.id %}
+                        <a href="{% url 'proposal' %}" class="btn btn-sm btn-primary mt-2">
+                            Edit proposal
+                        </a>
+                    {% else %}
+                        <a href="{% url 'proposal' %}" class="btn btn-sm btn-outline-secondary mt-2">
+                            View proposal
+                        </a>
+                    {% endif %}
+
+                {% else %}
+                    {% if can_create_team %}
+                        <a href="{% url 'create_team' %}" class="btn btn-primary mb-2">
+                            Create Team
+                        </a>
+                    {% else %}
+                        <button class="btn btn-secondary mb-2" disabled>
+                            Create Team (need 2 or 3 accepted invites)
+                        </button>
+                    {% endif %}
+                    <p class="text-muted mb-0">Team details and proposal form will be added here.</p>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
-
 
 {% endblock %}
