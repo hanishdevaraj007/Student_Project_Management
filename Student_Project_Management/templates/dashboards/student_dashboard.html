@@ -94,15 +94,31 @@
     </div>
 </div>
 
+
 <!-- Next step: team creation area -->
 <div class="row">
     <div class="col-md-12">
         <div class="card shadow-sm">
             <div class="card-body">
                 <h5 class="card-title">My Team</h5>
-                <p class="text-muted mb-0">Team details and proposal form will be added here.</p>
+
+                {% if can_create_team %}
+                    <a href="#" class="btn btn-primary">
+                        Create Team (coming soon)
+                    </a>
+                {% else %}
+                    <button class="btn btn-secondary" disabled>
+                        Create Team (need 3 accepted invites)
+                    </button>
+                {% endif %}
+
+                <p class="text-muted mb-0 mt-2">
+                    Team details and proposal form will be added here.
+                </p>
             </div>
         </div>
     </div>
 </div>
+
+
 {% endblock %}

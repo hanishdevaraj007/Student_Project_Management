@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 
-from .models import User, StudentProfile, Invitation
+from .models import User, StudentProfile, Invitation, Team
 
 
 def home(request):
@@ -45,6 +45,11 @@ def student_dashboard(request):
         "department", "class_section", "batch", "user"
     ).get(user=request.user)
 
+        # is this student already in any team? (as leader or member)
+    is_leader = Team.objects.filter(team_leader=student).exists()
+    is_member = Team.objects.filter(members=student).exists()
+    already_in_team = is_leader or is_member
+
     # invitations received by this student
     received_invites = Invitation.objects.filter(
         to_student=student
@@ -55,10 +60,22 @@ def student_dashboard(request):
         from_student=student
     ).order_by("-created_at")
 
+    # count of invitations this student has accepted
+    accepted_invites_count = Invitation.objects.filter(
+        to_student=student,
+        status="ACCEPTED",
+    ).count()
+
+    # temporary flag: later we will also check team membership here
+    can_create_team = (accepted_invites_count >= 3) and (not already_in_team)
+
     context = {
         "student": student,
         "invitations": received_invites,
         "sent_invitations": sent_invites,
+        "accepted_invites_count": accepted_invites_count,
+        "can_create_team": can_create_team,
+        "already_in_team":already_in_team,
     }
     return render(request, "dashboards/student_dashboard.html", context)
 
@@ -163,3 +180,34 @@ def respond_invite(request, invite_id, action):
         messages.info(request, "Invitation rejected.")
 
     return redirect("student_dashboard")
+
+@login_required
+def create_team_view(request):
+    user: User = request.user
+    if user.user_type != User.UserType.STUDENT:
+        return redirect("dashboard_redirect")
+
+    student = StudentProfile.objects.get(user=user)
+
+    # same checks as dashboard
+    is_leader = Team.objects.filter(team_leader=student).exists()
+    is_member = Team.objects.filter(members=student).exists()
+    already_in_team = is_leader or is_member
+
+    accepted_invites_count = Invitation.objects.filter(
+        to_student=student,
+        status="ACCEPTED",
+    ).count()
+
+    can_create_team = (accepted_invites_count >= 3) and (not already_in_team)
+
+    if not can_create_team:
+        messages.error(request, "You are not allowed to create a team.")
+        return redirect("student_dashboard")
+
+    # TEMP: simple placeholder
+    return render(request, "dashboards/create_team.html", {
+        "student": student,
+        "accepted_invites_count": accepted_invites_count,
+    })
+
