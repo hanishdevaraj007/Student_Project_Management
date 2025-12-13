@@ -3,8 +3,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from .models import User, StudentProfile, Invitation, Team, ProjectProposal
 from django.db import models
+from .models import (
+    User,
+    StudentProfile,
+    Invitation,
+    Team,
+    ProjectProposal,
+    ProposalDocument,
+)
 
 
 def home(request):
@@ -345,15 +352,42 @@ def proposal_view(request):
 
         title = request.POST.get("title", "").strip()
         problem = request.POST.get("problem_statement", "").strip()
+        objectives = request.POST.get("objectives", "").strip()
+        domain = request.POST.get("domain", "").strip()
+        expected = request.POST.get("expected_outcomes", "").strip()
+        duration_raw = request.POST.get("estimated_duration_weeks", "").strip()
 
         if not title or not problem:
             messages.error(request, "Title and problem statement are required.")
             return redirect("proposal")
 
+        # parse duration (optional)
+        duration = None
+        if duration_raw:
+            try:
+                duration = int(duration_raw)
+            except ValueError:
+                messages.error(request, "Estimated duration must be a number.")
+                return redirect("proposal")
+
         proposal.title = title
         proposal.problem_statement = problem
+        proposal.objectives = objectives
+        proposal.domain = domain
+        proposal.expected_outcomes = expected
+        proposal.estimated_duration_weeks = duration
         proposal.status = ProjectProposal.Status.PENDING
         proposal.save()
+
+        pdf_file = request.FILES.get("proposal_pdf")
+        if pdf_file:
+            ProposalDocument.objects.create(
+                proposal=proposal,
+                file=pdf_file,
+                uploaded_by=student,
+            )
+
+
 
         messages.success(request, "Proposal saved.")
         return redirect("proposal")

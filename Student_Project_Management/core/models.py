@@ -163,6 +163,31 @@ class ProjectProposal(models.Model):
 
     def __str__(self):
         return f"{self.team.name} - {self.title}"
+    
+def proposal_upload_path(instance, filename):
+    # stored as: proposals/<team_name>/<timestamp>_<filename>
+    import time
+    safe_team = instance.proposal.team.name.replace(" ", "_")
+    return f"proposals/{safe_team}/{int(time.time())}_{filename}"
+
+class ProposalDocument(models.Model):
+    proposal = models.ForeignKey(
+        ProjectProposal,
+        on_delete=models.CASCADE,
+        related_name="documents",
+    )
+    file = models.FileField(upload_to=proposal_upload_path)
+    uploaded_by = models.ForeignKey(
+        StudentProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.proposal.team.name} - {self.file.name}"
+
 
 
 class Invitation(models.Model):

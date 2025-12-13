@@ -123,6 +123,16 @@
                             Pending approval
                         {% endif %}
                     </p>
+                    <p class="mb-1">
+                        <strong>Proposal:</strong>
+                        {% if team.proposal %}
+                            {{ team.proposal.title|default:"Not set" }} –
+                            {{ team.proposal.get_status_display }}
+                        {% else %}
+                            Not created yet
+                        {% endif %}
+                    </p>
+
 
                     {% if team.team_leader_id == student.id %}
                         <a href="{% url 'proposal' %}" class="btn btn-sm btn-primary mt-2">
