@@ -5,7 +5,6 @@ from django.urls import reverse
 
 from .models import User
 
-
 def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -13,8 +12,9 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect("dashboard_redirect")
+            return redirect("dashboard_redirect")  # no change here
     return render(request, "auth/login.html")
+
 
 
 @login_required
