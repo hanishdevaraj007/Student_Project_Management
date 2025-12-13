@@ -21,10 +21,11 @@ from core import views as core_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("login/", core_views.login_view, name="login"),
+    path("", core_views.login_view, name="login"),  # root shows login
     path("logout/", core_views.logout_view, name="logout"),
-    path("", core_views.dashboard_redirect, name="dashboard_redirect"),
+    path("home/", core_views.dashboard_redirect, name="dashboard_redirect"),
     path("student/dashboard/", core_views.student_dashboard, name="student_dashboard"),
     path("faculty/dashboard/", core_views.faculty_dashboard, name="faculty_dashboard"),
     path("hod/dashboard/", core_views.hod_dashboard, name="hod_dashboard"),
 ]
+
