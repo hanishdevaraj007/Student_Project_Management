@@ -13,7 +13,7 @@
 <p class="mb-2"><strong>Team:</strong> {{ team.name }}</p>
 
 {% if is_leader %}
-<form method="post">
+<form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
     <div class="mb-3">
@@ -27,6 +27,51 @@
         <textarea name="problem_statement" rows="5"
                   class="form-control" required>{{ proposal.problem_statement }}</textarea>
     </div>
+
+        <div class="mb-3">
+        <label class="form-label">Objectives</label>
+        <textarea name="objectives" rows="3"
+                  class="form-control">{{ proposal.objectives }}</textarea>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Domain / technology</label>
+        <input type="text" name="domain" class="form-control"
+               value="{{ proposal.domain }}">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Expected outcomes</label>
+        <textarea name="expected_outcomes" rows="3"
+                  class="form-control">{{ proposal.expected_outcomes }}</textarea>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Estimated duration (weeks)</label>
+        <input type="number" name="estimated_duration_weeks" min="1"
+               class="form-control"
+               value="{{ proposal.estimated_duration_weeks }}">
+    </div>
+        <div class="mb-3">
+        <label class="form-label">Upload proposal PDF</label>
+        <input type="file" name="proposal_pdf" class="form-control" accept="application/pdf">
+        <div class="form-text">Upload only PDF. Each upload is stored as a new version.</div>
+    </div>
+
+    <h5 class="mt-4">Uploaded versions</h5>
+    {% if proposal.documents.all %}
+        <ul>
+            {% for doc in proposal.documents.all %}
+                <li>
+                    <a href="{{ doc.file.url }}" target="_blank">
+                        Version {{ forloop.counter }} ({{ doc.uploaded_at|date:"d M Y H:i" }})
+                    </a>
+                </li>
+            {% endfor %}
+    {% else %}
+        <p class="text-muted">No files uploaded yet.</p>
+    {% endif %}
+
 
     <button type="submit" class="btn btn-primary">Save proposal</button>
     <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">Back</a>

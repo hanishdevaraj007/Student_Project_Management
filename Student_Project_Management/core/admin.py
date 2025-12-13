@@ -3,12 +3,8 @@ from django.contrib import admin
 # Register your models here.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User
-
 from .models import Department, Batch, ClassSection, FacultyProfile, StudentProfile
-from .models import ProjectProposal
-
-from .models import Team, Invitation, ProjectProposal
+from .models import User,Team, Invitation, ProjectProposal, ProposalDocument
 
 
 @admin.register(User)
@@ -68,3 +64,9 @@ class ProjectProposalAdmin(admin.ModelAdmin):
     list_display = ("title", "team", "status", "preferred_mentor", "created_at")
     list_filter = ("status", "team__department","team__batch")
     search_filter = ("title","team__name")
+
+@admin.register(ProposalDocument)
+class ProposalDocumentAdmin(admin.ModelAdmin):
+    list_display = ("proposal", "file", "uploaded_by", "uploaded_at")
+    list_filter = ("uploaded_at",)
+
