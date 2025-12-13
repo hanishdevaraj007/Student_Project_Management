@@ -1,6 +1,108 @@
 {% extends "base.html" %}
 {% block title %}Student Dashboard{% endblock %}
+
 {% block content %}
-<h3>Student Dashboard</h3>
-<p>Welcome, {{ user.username }}. Student view will come here.</p>
+<h3 class="mb-3">Student Dashboard</h3>
+
+{# NEW: show flash messages #}
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="row">
+    <!-- Left: profile and team info -->
+    <div class="col-md-6 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">My Profile</h5>
+                <p class="mb-1"><strong>Name:</strong> {{ student.user.get_full_name|default:student.user.username }}</p>
+                <p class="mb-1"><strong>Roll:</strong> {{ student.roll_number }}</p>
+                <p class="mb-1"><strong>Department:</strong> {{ student.department.name }}</p>
+                <p class="mb-1"><strong>Class:</strong> {{ student.class_section.name }}</p>
+                <p class="mb-1"><strong>Batch:</strong> {{ student.batch.name }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: invitations -->
+    <div class="col-md-6 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Invitations</h5>
+
+                {# NEW: form to send invite by roll number #}
+                <form method="post" action="{% url 'send_invite' %}" class="row g-2 mb-3">
+                    {% csrf_token %}
+                    <div class="col-8">
+                    <input type="text" name="roll_number" class="form-control" placeholder="Enter roll number" required>
+                    </div>
+                    <div class="col-4">
+                        <button type="submit" class="btn btn-sm btn-primary w-100">Send invite</button>
+                    </div>
+                </form>
+
+                <h6 class="mb-2">Received</h6>
+
+                {% if invitations %}
+                    
+                    <ul class="list-group mb-3">
+                        {% for invite in invitations %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    From: {{ invite.from_student.user.get_full_name|default:invite.from_student.user.username }}
+                                    <br>
+                                    Status: {{ invite.status }}
+                                </div>
+                                <div>
+                                    {% if invite.status == "PENDING" %}
+                                        <a href="{% url 'respond_invite' invite.id 'accept' %}" class="btn btn-sm btn-success">Accept</a>
+                                        <a href="{% url 'respond_invite' invite.id 'reject' %}" class="btn btn-sm btn-outline-danger">Reject</a>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ invite.status }}</span>
+                                    {% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No received invitations right now.</p>
+                {% endif %}
+
+                <h6 class="mb-2">Sent</h6>
+                {% if sent_invitations %}
+                    <ul class="list-group">
+                        {% for invite in sent_invitations %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    To: {{ invite.to_student.user.get_full_name|default:invite.to_student.user.username }}
+                                    <br>
+                                    Status: {{ invite.status }}
+                                </div>
+                                <div>
+                                    <span class="badge bg-secondary">{{ invite.status }}</span>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted mb-0">No sent invitations yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Next step: team creation area -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">My Team</h5>
+                <p class="text-muted mb-0">Team details and proposal form will be added here.</p>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
