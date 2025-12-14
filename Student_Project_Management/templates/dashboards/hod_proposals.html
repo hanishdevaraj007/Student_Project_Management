@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}HOD Proposals{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Project Proposals (HOD)</h3>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<p class="mb-2">
+  <strong>HOD:</strong>
+  {{ faculty.user.get_full_name|default:faculty.user.username }}
+  ({{ faculty.department.name }})
+</p>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-3">
+    <select name="status" class="form-select">
+      <option value="">All statuses</option>
+      {% for value,label in status_choices %}
+        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+          {{ label }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-3">
+    <select name="batch" class="form-select">
+      <option value="">All batches</option>
+      {% for batch_id, batch_name in batches %}
+        <option value="{{ batch_id }}" {% if selected_batch == batch_id %}selected{% endif %}>
+          {{ batch_name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-3">
+    <input type="text" name="q" class="form-control" placeholder="Search by team or title"
+           value="{{ search_query }}">
+  </div>
+
+  <div class="col-md-2">
+    <button type="submit" class="btn btn-primary w-100">Filter</button>
+  </div>
+  <div class="col-md-1">
+    <a href="{% url 'hod_proposals_list' %}" class="btn btn-secondary w-100">Clear</a>
+  </div>
+</form>
+
+{% if proposals %}
+  <table class="table table-sm table-hover">
+    <thead>
+      <tr>
+        <th>Team</th>
+        <th>Class</th>
+        <th>Batch</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Last updated</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for prop in proposals %}
+        <tr>
+          <td>{{ prop.team.name }}</td>
+          <td>{{ prop.team.class_section.name }}</td>
+          <td>{{ prop.team.batch.name }}</td>
+          <td>{{ prop.title|default:"(no title)" }}</td>
+          <td>{{ prop.get_status_display }}</td>
+          <td>{{ prop.updated_at|date:"d M Y H:i" }}</td>
+          <td>
+            <a href="{% url 'hod_proposal_detail' prop.id %}" class="btn btn-sm btn-outline-primary">
+              View
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="text-muted">No proposals found for your filters.</p>
+{% endif %}
+{% endblock %}

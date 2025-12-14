@@ -74,25 +74,51 @@
 <hr class="my-4">
 
 <h5>Coordinator decision</h5>
-<form method="post" class="mb-3">
-  {% csrf_token %}
-  <div class="mb-3">
-    <label class="form-label">Status</label>
-    <select name="status" class="form-select" required>
-      {% for value,label in status_choices %}
-        <option value="{{ value }}" {% if proposal.status == value %}selected{% endif %}>
-          {{ label }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
 
-  <div class="mb-3">
-    <label class="form-label">Coordinator comment (optional)</label>
-    <textarea name="coordinator_comment" rows="3" class="form-control">{{ proposal.coordinator_comment }}</textarea>
-  </div>
+{% if is_hod_readonly %}
+  <p>
+    <strong>Status:</strong> {{ proposal.get_status_display }}<br>
+    <strong>Coordinator comment:</strong>
+    <span style="white-space: pre-wrap;">{{ proposal.coordinator_comment|default:"(no comment)" }}</span>
+  </p>
+  <a href="{% url 'hod_proposals' %}" class="btn btn-secondary">Back to list</a>
+{% else %}
+  <form method="post" class="mb-3">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select" required>
+        {% for value,label in status_choices %}
+          <option value="{{ value }}" {% if proposal.status == value %}selected{% endif %}>
+            {{ label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
 
-  <button type="submit" class="btn btn-primary">Save decision</button>
-  <a href="{% url 'coordinator_proposals' %}" class="btn btn-secondary">Back to list</a>
-</form>
+    <div class="mb-3">
+      <label class="form-label">Mentor (optional, on approval)</label>
+      <select name="mentor_id" class="form-select">
+        <option value="">-- No mentor assigned --</option>
+        {% for f in possible_mentors %}
+          <option value="{{ f.id }}" {% if proposal.team.mentor and proposal.team.mentor.id == f.id %}selected{% endif %}>
+            {{ f.user.get_full_name|default:f.user.username }}
+          </option>
+        {% endfor %}
+      </select>
+      <div class="form-text">
+        Choose a mentor when approving; leave blank if not decided.
+      </div>
+    </div>
+
+
+    <div class="mb-3">
+      <label class="form-label">Coordinator comment (optional)</label>
+      <textarea name="coordinator_comment" rows="3" class="form-control">{{ proposal.coordinator_comment }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save decision</button>
+    <a href="{% url 'coordinator_proposals' %}" class="btn btn-secondary">Back to list</a>
+  </form>
+{% endif %}
 {% endblock %}

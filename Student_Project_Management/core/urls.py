@@ -11,5 +11,19 @@ urlpatterns = [
     path("hod/dashboard/", staff_views.hod_dashboard, name="hod_dashboard"),
     path('coordinator/proposals/', staff_views.coordinator_proposal_list, name='coordinator_proposals'),
     path('coordinator/proposals/<int:proposal_id>/', staff_views.coordinator_proposal_detail, name='coordinator_proposal_detail'),
+        # HOD views
+    path(
+        "hod/proposals/",
+        staff_views.hod_proposal_list,
+        name="hod_proposals_list",
+    ),
+    path(
+        "hod/proposals/<int:proposal_id>/",
+        staff_views.hod_proposal_detail,
+        name="hod_proposal_detail",
+    ),
+    path("mentor/dashboard/", staff_views.mentor_dashboard, name="mentor_dashboard"),
+    path("advisor/dashboard/", staff_views.advisor_dashboard, name="advisor_dashboard"),
+
 
 ]

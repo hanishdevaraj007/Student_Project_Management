@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Advisor Dashboard{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Advisor Dashboard</h3>
+
+<p class="mb-3">
+  Welcome, {{ faculty.user.get_full_name|default:faculty.user.username }}.
+  You are advisor for {{ faculty.department.name }}.
+</p>
+
+<table class="table table-sm table-hover">
+  <thead>
+    <tr>
+      <th>Student</th>
+      <th>Roll no</th>
+      <th>Class</th>
+      <th>Team</th>
+      <th>Project title</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in students %}
+      {% with teams=s.prefetched_teams %}
+        {% if teams %}
+          {% for t in teams %}
+            <tr>
+              <td>{{ s.user.get_full_name|default:s.user.username }}</td>
+              <td>{{ s.roll_number }}</td>
+              <td>{{ s.class_section.name }}</td>
+              <td>{{ t.name }}</td>
+              <td>{{ t.proposal.title|default:"(no proposal)" }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td>{{ s.user.get_full_name|default:s.user.username }}</td>
+            <td>{{ s.roll_number }}</td>
+            <td>{{ s.class_section.name }}</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+        {% endif %}
+      {% endwith %}
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

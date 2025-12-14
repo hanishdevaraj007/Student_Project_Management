@@ -63,6 +63,7 @@ class FacultyProfile(models.Model):
     employee_id = models.CharField(max_length=50, unique=True)
     is_hod = models.BooleanField(default=False)
     is_coordinator = models.BooleanField(default=False)
+    is_advisor = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.user.get_full_name() or self.user.username} - {self.employee_id}"
 

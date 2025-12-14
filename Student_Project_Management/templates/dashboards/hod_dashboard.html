@@ -1,7 +1,23 @@
 {% extends "base.html" %}
 {% block title %}HOD Dashboard{% endblock %}
-{% block content %}
-<h3>HOD Dashboard</h3>
-<p>Welcome, {{ user.username }}. HOD view will come here.</p>
-{% endblock %}
 
+{% block content %}
+<h3 class="mb-3">HOD Dashboard</h3>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<p class="mb-3">
+  Welcome,
+  {{ user.get_full_name|default:user.username }}.
+  You are logged in as HOD of
+  {{ user.facultyprofile.department.name }}.
+</p>
+
+<a href="{% url 'hod_proposals_list' %}" class="btn btn-primary">
+  View all project proposals
+</a>
+{% endblock %}
