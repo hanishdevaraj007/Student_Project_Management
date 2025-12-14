@@ -1,6 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Faculty Dashboard{% endblock %}
+
 {% block content %}
-<h3>Faculty Dashboard</h3>
-<p>Welcome, {{ user.username }}. Faculty view will come here.</p>
+<h3 class="mb-3">Faculty Dashboard</h3>
+<p class="mb-3">
+  Welcome, {{ user.get_full_name|default:user.username }}.
+</p>
+
+{% comment %} Show coordinator link only if this faculty is a coordinator {% endcomment %}
+{% if user.user_type == user.UserType.FACULTY and user.facultyprofile.is_coordinator %}
+  <a href="{% url 'coordinator_proposals' %}" class="btn btn-primary">
+    View project proposals (Coordinator)
+  </a>
+{% else %}
+  <p class="text-muted">You are not assigned as coordinator.</p>
+{% endif %}
 {% endblock %}

@@ -18,6 +18,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from core import views as core_views
+from core import views as core_views
+from core import staff_views
+
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -35,5 +39,17 @@ urlpatterns = [
     ),
     path("student/team/create/", core_views.create_team_view, name="create_team"),
     path("student/proposal/", core_views.proposal_view, name="proposal"),
+        # Coordinator views
+    path(
+        "coordinator/proposals/",
+        staff_views.coordinator_proposal_list,
+        name="coordinator_proposals",
+    ),
+    path(
+        "coordinator/proposals/<int:proposal_id>/",
+        staff_views.coordinator_proposal_detail,
+        name="coordinator_proposal_detail",
+    ),
+
 
 ]

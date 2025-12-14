@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Coordinator Proposals{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Project Proposals (Coordinator)</h3>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<p class="mb-2">
+  <strong>Coordinator:</strong>
+  {{ faculty.user.get_full_name|default:faculty.user.username }}
+  ({{ faculty.department.name }} )
+</p>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-3">
+    <select name="status" class="form-select">
+      <option value="">All statuses</option>
+      {% for value,label in status_choices %}
+        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+          {{ label }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <input type="text" name="q" class="form-control" placeholder="Search by team or title"
+           value="{{ search_query }}">
+  </div>
+  <div class="col-md-2">
+    <button type="submit" class="btn btn-primary w-100">Filter</button>
+  </div>
+  <div class="col-md-2">
+    <a href="{% url 'coordinator_proposals' %}" class="btn btn-secondary w-100">Clear</a>
+  </div>
+</form>
+
+{% if proposals %}
+  <table class="table table-sm table-hover">
+    <thead>
+      <tr>
+        <th>Team</th>
+        <th>Class</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Last updated</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for prop in proposals %}
+        <tr>
+          <td>{{ prop.team.name }}</td>
+          <td>{{ prop.team.class_section.name }}</td>
+          <td>{{ prop.title|default:"(no title)" }}</td>
+          <td>{{ prop.get_status_display }}</td>
+          <td>{{ prop.updated_at|date:"d M Y H:i" }}</td>
+          <td>
+            <a href="{% url 'coordinator_proposal_detail' prop.id %}" class="btn btn-sm btn-outline-primary">
+              View / Update
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="text-muted">No proposals found for your filters.</p>
+{% endif %}
+{% endblock %}

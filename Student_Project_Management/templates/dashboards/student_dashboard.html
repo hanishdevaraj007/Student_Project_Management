@@ -127,11 +127,20 @@
                         <strong>Proposal:</strong>
                         {% if team.proposal %}
                             {{ team.proposal.title|default:"Not set" }} –
-                            {{ team.proposal.get_status_display }}
+                            {% if team.proposal.status == "APPROVED" %}
+                                <span class="badge bg-success">{{ team.proposal.get_status_display }}</span>
+                            {% elif team.proposal.status == "REJECTED" %}
+                                <span class="badge bg-danger">{{ team.proposal.get_status_display }}</span>
+                            {% elif team.proposal.status == "REVISION" %}
+                                <span class="badge bg-warning text-dark">{{ team.proposal.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ team.proposal.get_status_display }}</span>
+                            {% endif %}
                         {% else %}
-                            Not created yet
+                            <span class="text-muted">Not created yet</span>
                         {% endif %}
                     </p>
+
 
 
                     {% if team.team_leader_id == student.id %}
