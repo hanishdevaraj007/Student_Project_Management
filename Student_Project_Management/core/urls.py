@@ -15,8 +15,9 @@ urlpatterns = [
     path(
         "hod/proposals/",
         staff_views.hod_proposal_list,
-        name="hod_proposals_list",
+        name="hod_proposal_list",
     ),
+
     path(
         "hod/proposals/<int:proposal_id>/",
         staff_views.hod_proposal_detail,
@@ -24,6 +25,18 @@ urlpatterns = [
     ),
     path("mentor/dashboard/", staff_views.mentor_dashboard, name="mentor_dashboard"),
     path("advisor/dashboard/", staff_views.advisor_dashboard, name="advisor_dashboard"),
+    path("hod/faculty/", staff_views.hod_faculty_list, name="hod_faculty_list"),
 
+        # Coordinator review management
+    path(
+        "coordinator/team/<int:team_id>/reviews/",
+        staff_views.coordinator_team_reviews,
+        name="coordinator_team_reviews",
+    ),
+    path(
+        "coordinator/team/<int:team_id>/reviews/<str:review_type>/",
+        staff_views.coordinator_edit_review,
+        name="coordinator_edit_review",
+    ),
 
 ]

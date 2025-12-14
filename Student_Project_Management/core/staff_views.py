@@ -2,14 +2,21 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import models
 from django.shortcuts import get_object_or_404, redirect, render
-from django.db.models import Q, Case, When, Value, IntegerField
+from django.db.models import Q, Case, When, Value, IntegerField,Prefetch
 from core import staff_views
 from .models import (
     User,
     FacultyProfile,
     ProjectProposal,
     ProposalDocument,
+    StudentProfile,
+    Team,
+    Review,
+    ReviewRubric,
 )
+import datetime
+from django.utils import timezone
+
 
 
 def _require_coordinator(user: User):
@@ -148,6 +155,110 @@ def coordinator_proposal_detail(request, proposal_id):
     }
     return render(request, "dashboards/coordinator_proposal_detail.html", context)
 
+@login_required
+def coordinator_team_reviews(request, team_id):
+    """
+    Coordinator: see all reviews (1st/2nd/final) for a team.
+    """
+    user: User = request.user
+    faculty, error_response = _require_coordinator(user)
+    if error_response:
+        return error_response
+
+    team = get_object_or_404(
+        Team.objects.select_related("department", "batch", "class_section"),
+        id=team_id,
+        department=faculty.department,
+    )
+
+    reviews = team.reviews.all().order_by("date")
+
+    context = {
+        "faculty": faculty,
+        "team": team,
+        "reviews": reviews,
+    }
+    return render(request, "dashboards/coordinator_team_reviews.html", context)
+
+@login_required
+def coordinator_edit_review(request, team_id, review_type):
+    user: User = request.user
+    faculty, error_response = _require_coordinator(user)
+    if error_response:
+        return error_response
+
+    team = get_object_or_404(
+        Team.objects.select_related("department"),
+        id=team_id,
+        department=faculty.department,
+    )
+
+    # Try to fetch existing review; do NOT create yet
+    try:
+        review = Review.objects.get(team=team, review_type=review_type)
+    except Review.DoesNotExist:
+        review = None
+
+    panel_candidates = FacultyProfile.objects.filter(
+        department=faculty.department
+    ).select_related("user")
+
+    if request.method == "POST":
+        # create or update on POST
+        if review is None:
+            review = Review(team=team, review_type=review_type, created_by=faculty)
+
+        date_str = request.POST.get("date")
+        requirements = request.POST.get("requirements", "").strip()
+        panel_ids = request.POST.getlist("panel_members")
+
+        if date_str:
+            try:
+                review.date = datetime.date.fromisoformat(date_str)
+            except Exception:
+                messages.error(request, "Invalid date.")
+                return redirect("coordinator_edit_review", team_id=team.id, review_type=review_type)
+        else:
+            review.date = None  # or keep previous date
+
+        review.requirements = requirements
+        review.created_by = faculty
+        review.save()
+
+        review.panel_members.set(
+            FacultyProfile.objects.filter(
+                id__in=panel_ids,
+                department=faculty.department,
+            )
+        )
+
+        review.rubrics.all().delete()
+        names = request.POST.getlist("rubric_name")
+        weights = request.POST.getlist("rubric_weight")
+        max_scores = request.POST.getlist("rubric_max_score")
+
+        for name, weight, max_score in zip(names, weights, max_scores):
+            name = name.strip()
+            if not name:
+                continue
+            ReviewRubric.objects.create(
+                review=review,
+                name=name,
+                weight=int(weight or 0),
+                max_score=int(max_score or 10),
+            )
+
+        messages.success(request, "Review details saved.")
+        return redirect("coordinator_team_reviews", team_id=team.id)
+
+    context = {
+        "faculty": faculty,
+        "team": team,
+        "review": review,
+        "panel_candidates": panel_candidates,
+        "review_type": review_type,
+    }
+    return render(request, "dashboards/coordinator_edit_review.html", context)
 
 
 def require_hod_user(user): 
@@ -297,7 +408,45 @@ def hod_proposal_detail(request, proposal_id):
     return render(request, "dashboards/coordinator_proposal_detail.html", context)
 
 @login_required
-def mentor_dashboard(request):
+def hod_faculty_list(request):
+    """
+    HOD view: manage coordinators in their department.
+    """
+    user: User = request.user
+    faculty, error_response = require_hod_user(user)
+    if error_response:
+        return error_response
+
+    department = faculty.department
+
+    if request.method == "POST":
+        # list of faculty ids that should be coordinators
+        ids = request.POST.getlist("coordinator_ids")
+        ids = [int(i) for i in ids]
+
+        FacultyProfile.objects.filter(department=department).update(is_coordinator=False)
+        FacultyProfile.objects.filter(id__in=ids, department=department).update(
+            is_coordinator=True
+        )
+
+        messages.success(request, "Coordinator assignments updated.")
+
+    faculty_list = FacultyProfile.objects.select_related("user").filter(
+        department=department
+    ).order_by("user__username")
+
+    context = {
+        "faculty": faculty,
+        "faculty_list": faculty_list,
+    }
+    return render(request, "dashboards/hod_faculty_list.html", context)
+
+
+@login_required
+def advisor_dashboard(request):
+    """
+    Advisor dashboard: all students in advisor's department + their team/project.
+    """
     user: User = request.user
 
     if user.user_type != User.UserType.FACULTY:
@@ -308,17 +457,30 @@ def mentor_dashboard(request):
     except FacultyProfile.DoesNotExist:
         return redirect("dashboard_redirect")
 
-    # Teams where this faculty is mentor
-    from .models import Team  # if not imported yet
+    if not getattr(faculty, "is_advisor", False):
+        return redirect("dashboard_redirect")
+
+    students = StudentProfile.objects.select_related(
+        "user", "department", "batch", "class_section"
+    ).filter(department=faculty.department)
+
     teams = Team.objects.select_related(
-        "department", "batch", "class_section", "proposal"
+        "department",
+        "batch",
+        "class_section",
+        "proposal",
+    ).prefetch_related(
+        "proposal__documents",
+        "reviews",
     ).filter(mentor=faculty)
+
 
     context = {
         "faculty": faculty,
-        "teams": teams,
+        "students": students,
     }
-    return render(request, "dashboards/mentor_dashboard.html", context)
+    return render(request, "dashboards/advisor_dashboard.html", context)
+
 
 @login_required
 def advisor_dashboard(request):
@@ -332,20 +494,17 @@ def advisor_dashboard(request):
     except FacultyProfile.DoesNotExist:
         return redirect("dashboard_redirect")
 
-    if not faculty.is_advisor:
+    if not getattr(faculty, "is_advisor", False):
         return redirect("dashboard_redirect")
 
-    from .models import StudentProfile, Team
-
     students = StudentProfile.objects.select_related(
-        "user", "department", "batch", "class_section"
-    ).filter(department=faculty.department)
-
-    # Optional: prefetch team & proposal
-    from django.db.models import Prefetch
-    teams = Team.objects.select_related("proposal").prefetch_related("members")
-    students = students.prefetch_related(
-        Prefetch("team_set", queryset=teams, to_attr="prefetched_teams")
+    "user", "department", "batch", "class_section"
+    ).filter(
+    department=faculty.department
+    ).order_by(
+    "class_section__name",
+    "teams__name",
+    "user__username",
     )
 
     context = {
@@ -353,3 +512,33 @@ def advisor_dashboard(request):
         "students": students,
     }
     return render(request, "dashboards/advisor_dashboard.html", context)
+
+@login_required
+def mentor_dashboard(request):
+    """
+    Mentor dashboard: shows teams where this faculty is mentor.
+    """
+    user: User = request.user
+
+    if user.user_type != User.UserType.FACULTY:
+        return redirect("dashboard_redirect")
+
+    try:
+        faculty = FacultyProfile.objects.get(user=user)
+    except FacultyProfile.DoesNotExist:
+        return redirect("dashboard_redirect")
+
+    teams = Team.objects.select_related(
+        "department",
+        "batch",
+        "class_section",
+        "proposal",
+    ).prefetch_related(
+    "proposal__documents",
+    ).filter(mentor=faculty)
+
+    context = {
+        "faculty": faculty,
+        "teams": teams,
+    }
+    return render(request, "dashboards/mentor_dashboard.html", context)

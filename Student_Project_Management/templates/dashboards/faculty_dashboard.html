@@ -3,16 +3,26 @@
 
 {% block content %}
 <h3 class="mb-3">Faculty Dashboard</h3>
+
 <p class="mb-3">
-  Welcome, {{ user.get_full_name|default:user.username }}.
+  Welcome, {{ user.get_full_name|default:user.username }}. Faculty view is shown below.
 </p>
 
-{% comment %} Show coordinator link only if this faculty is a coordinator {% endcomment %}
-{% if user.user_type == user.UserType.FACULTY and user.facultyprofile.is_coordinator %}
-  <a href="{% url 'coordinator_proposals' %}" class="btn btn-primary">
-    View project proposals (Coordinator)
+<div class="mb-3">
+  {% if user.facultyprofile.is_coordinator %}
+    <a href="{% url 'coordinator_proposals' %}" class="btn btn-primary me-2">
+      Coordinator proposals
+    </a>
+  {% endif %}
+
+  <a href="{% url 'mentor_dashboard' %}" class="btn btn-outline-primary me-2">
+    Mentor dashboard
   </a>
-{% else %}
-  <p class="text-muted">You are not assigned as coordinator.</p>
-{% endif %}
+
+  {% if user.facultyprofile.is_advisor %}
+  <a href="{% url 'advisor_dashboard' %}" class="btn btn-outline-secondary">
+    Advisor dashboard
+  </a>
+  {% endif %}
+</div>
 {% endblock %}

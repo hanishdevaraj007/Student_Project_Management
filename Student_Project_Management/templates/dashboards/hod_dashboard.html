@@ -17,7 +17,11 @@
   {{ user.facultyprofile.department.name }}.
 </p>
 
-<a href="{% url 'hod_proposals_list' %}" class="btn btn-primary">
+<a href="{% url 'hod_proposal_list' %}" class="btn btn-primary">
   View all project proposals
 </a>
+<a href="{% url 'hod_faculty_list' %}" class="btn btn-outline-primary ms-2">
+  Manage coordinators
+</a>
+
 {% endblock %}

@@ -6,38 +6,69 @@
 
 <p class="mb-3">
   Welcome, {{ faculty.user.get_full_name|default:faculty.user.username }}.
-  You are mentor for the following teams.
+  These are the teams assigned to you as mentor.
 </p>
 
 {% if teams %}
-  <table class="table table-sm table-hover">
-    <thead>
-      <tr>
-        <th>Team</th>
-        <th>Class</th>
-        <th>Batch</th>
-        <th>Proposal title</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for t in teams %}
-        <tr>
-          <td>{{ t.name }}</td>
-          <td>{{ t.class_section.name }}</td>
-          <td>{{ t.batch.name }}</td>
-          <td>{{ t.proposal.title|default:"(no proposal)" }}</td>
-          <td>
-            {% if t.proposal %}
-              {{ t.proposal.get_status_display }}
-            {% else %}
-              No proposal
-            {% endif %}
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% for t in teams %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">{{ t.name }}</h5>
+
+        <p class="mb-1">
+          <strong>Team ID:</strong> {{ t.team_id_code|default:"(not assigned)" }} |
+          <strong>Department:</strong> {{ t.department.name }} |
+          <strong>Class:</strong> {{ t.class_section.name }} |
+          <strong>Batch:</strong> {{ t.batch.name }}
+        </p>
+
+        <p class="mb-1">
+          <strong>Members:</strong>
+          {% for m in t.members.all %}
+            {{ m.user.get_full_name|default:m.user.username }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </p>
+
+        {% if t.proposal %}
+          <p class="mb-1"><strong>Project title:</strong> {{ t.proposal.title }}</p>
+          <p class="mb-1"><strong>Status:</strong> {{ t.proposal.get_status_display }}</p>
+          <p class="mb-2">
+            <strong>Coordinator comment:</strong>
+            <span style="white-space: pre-wrap;">{{ t.proposal.coordinator_comment|default:"(none)" }}</span>
+          </p>
+
+          <p class="mb-1"><strong>Latest documents:</strong></p>
+          <ul class="mb-2">
+            {% for doc in t.proposal.documents.all %}
+              <li>
+                <a href="{{ doc.file.url }}" target="_blank">
+                  Version {{ doc.version }} – {{ doc.uploaded_at|date:"d M Y H:i" }}
+                </a>
+              </li>
+            {% empty %}
+              <li class="text-muted">No documents uploaded yet.</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-2">No proposal submitted yet.</p>
+        {% endif %}
+
+        <h6>Review requirements</h6>
+        {% if t.reviews.all %}
+          <ul class="mb-0">
+            {% for r in t.reviews.all %}
+              <li>
+                {{ r.get_review_type_display }}:
+                {{ r.requirements|default:"No specific requirements set yet." }}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">No reviews scheduled yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
 {% else %}
   <p class="text-muted">No teams assigned to you as mentor yet.</p>
 {% endif %}

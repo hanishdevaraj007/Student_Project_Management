@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Advisor Dashboard{% endblock %}
 
 {% block content %}
@@ -20,29 +22,29 @@
     </tr>
   </thead>
   <tbody>
-    {% for s in students %}
-      {% with teams=s.prefetched_teams %}
-        {% if teams %}
-          {% for t in teams %}
-            <tr>
-              <td>{{ s.user.get_full_name|default:s.user.username }}</td>
-              <td>{{ s.roll_number }}</td>
-              <td>{{ s.class_section.name }}</td>
-              <td>{{ t.name }}</td>
-              <td>{{ t.proposal.title|default:"(no proposal)" }}</td>
-            </tr>
-          {% endfor %}
-        {% else %}
+  {% for s in students %}
+    {% with teams=s.teams.all %}
+      {% if teams %}
+        {% for t in teams %}
           <tr>
             <td>{{ s.user.get_full_name|default:s.user.username }}</td>
             <td>{{ s.roll_number }}</td>
             <td>{{ s.class_section.name }}</td>
-            <td>-</td>
-            <td>-</td>
+            \<td>{{ t.name }}{% if t.team_id_code %} ({{ t.team_id_code }}){% endif %}</td>
+            <td>{{ t.proposal.title|default:"(no proposal)" }}</td>
           </tr>
-        {% endif %}
-      {% endwith %}
-    {% endfor %}
-  </tbody>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td>{{ s.user.get_full_name|default:s.user.username }}</td>
+          <td>{{ s.roll_number }}</td>
+          <td>{{ s.class_section.name }}</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+      {% endif %}
+    {% endwith %}
+  {% endfor %}
+</tbody>
 </table>
 {% endblock %}

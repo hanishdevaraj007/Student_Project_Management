@@ -14,6 +14,13 @@
 <p class="mb-1"><strong>Class:</strong> {{ proposal.team.class_section.name }}</p>
 <p class="mb-1"><strong>Department:</strong> {{ proposal.team.department.name }}</p>
 <p class="mb-3"><strong>Batch:</strong> {{ proposal.team.batch.name }}</p>
+<p class="mb-1"><strong>Team ID:</strong> {{ proposal.team.team_id_code|default:"(not assigned)" }}</p>
+<p class="mb-3">
+  <a href="{% url 'coordinator_team_reviews' proposal.team.id %}" class="btn btn-sm btn-outline-secondary">
+    Manage reviews for this team
+  </a>
+</p>
+
 
 <div class="mb-3">
   <strong>Title:</strong>
@@ -81,7 +88,7 @@
     <strong>Coordinator comment:</strong>
     <span style="white-space: pre-wrap;">{{ proposal.coordinator_comment|default:"(no comment)" }}</span>
   </p>
-  <a href="{% url 'hod_proposals' %}" class="btn btn-secondary">Back to list</a>
+  <a href="{% url 'hod_proposal_list' %}" class="btn btn-secondary">Back to list</a>
 {% else %}
   <form method="post" class="mb-3">
     {% csrf_token %}

@@ -12,6 +12,26 @@ from .models import (
     ProjectProposal,
     ProposalDocument,
 )
+from django.conf import settings
+
+def can_be_teammates(s1: StudentProfile, s2: StudentProfile) -> bool:
+    """
+    Students can be teammates only if:
+    - Same department
+    - Same batch
+    - And either same section OR cross-section is allowed by settings
+    """
+    if s1.department_id != s2.department_id:
+        return False
+    if s1.batch_id != s2.batch_id:
+        return False
+
+    allow_cross_section = getattr(settings, "ALLOW_CROSS_SECTION_TEAMS", True)
+    if allow_cross_section:
+        return True
+    return s1.class_section_id == s2.class_section_id
+
+
 
 
 def home(request):
@@ -48,98 +68,62 @@ def dashboard_redirect(request):
 
 @login_required
 def student_dashboard(request):
-    student = StudentProfile.objects.select_related(
-        "department", "class_section", "batch", "user"
-    ).get(user=request.user)
+    user: User = request.user
 
-        # is this student already in any team? (as leader or member)
+    if user.user_type != User.UserType.STUDENT:
+        return redirect("dashboard_redirect")
+
+    # get this student's profile
+    try:
+        student = StudentProfile.objects.select_related(
+            "department", "batch", "class_section", "user"
+        ).get(user=user)
+    except StudentProfile.DoesNotExist:
+        return redirect("dashboard_redirect")
+
+    # find a team where this student is leader or member
+    team = None
     is_leader = Team.objects.filter(team_leader=student).exists()
     is_member = Team.objects.filter(members=student).exists()
     already_in_team = is_leader or is_member
-        # find team where this student is leader or member
-    team = None
-    if already_in_team:
-        team = Team.objects.filter(team_leader=student).first()
-        if team is None:
-            team = Team.objects.filter(members=student).first()
 
+    first_review = second_review = final_review = None
+    if team:
+        first_review = team.reviews.filter(review_type=Review.Type.FIRST).first()
+        second_review = team.reviews.filter(review_type=Review.Type.SECOND).first()
+        final_review = team.reviews.filter(review_type=Review.Type.FINAL).first()
+
+
+    if already_in_team:
+        team = Team.objects.select_related(
+            "department", "batch", "class_section", "proposal"
+        ).prefetch_related(
+            "members",
+            "reviews",
+            "proposal__documents",
+        ).filter(
+            models.Q(team_leader=student) | models.Q(members=student)
+        ).distinct().first()
 
     # invitations received by this student
-    received_invites = Invitation.objects.filter(
+    received_invitations = Invitation.objects.filter(
         to_student=student
     ).order_by("-created_at")
 
     # invitations sent by this student
-    sent_invites = Invitation.objects.filter(
+    sent_invitations = Invitation.objects.filter(
         from_student=student
     ).order_by("-created_at")
 
-    # count of invitations this student has accepted
-        # invitations sent by this student that were accepted
-    accepted_invites_count = Invitation.objects.filter(
-        from_student=student,
-        status="ACCEPTED",
-    ).count()
-
-    accepted_invites = Invitation.objects.filter(
-        from_student=student,
-        status="ACCEPTED",
-    ).select_related("to_student", "to_student__user")
-
-    if request.method == "POST":
-        team_name = request.POST.get("team_name", "").strip()
-        member_ids = request.POST.getlist("member_ids")
-
-        if not team_name:
-            messages.error(request, "Team name is required.")
-            return redirect("create_team")
-
-        if len(member_ids) != 3:
-            messages.error(request, "You must select exactly 3 members.")
-            return redirect("create_team")
-
-        # load selected members
-        members = StudentProfile.objects.filter(id__in=member_ids)
-
-        if members.count() != 3:
-            messages.error(request, "Some selected students were not found.")
-            return redirect("create_team")
-
-        # safety: ensure none of them is already in another team
-        conflict = Team.objects.filter(
-            models.Q(team_leader__in=members) | models.Q(members__in=members)
-        ).exists()
-        if conflict:
-            messages.error(request, "One of the selected members is already in another team.")
-            return redirect("create_team")
-
-        # create team
-        team = Team.objects.create(
-            name=team_name,
-            team_leader=student,
-            department=student.department,
-            batch=student.batch,
-            class_section=student.class_section,
-        )
-        team.members.set(list(members) + [student])  # include leader as member too
-        team.save()
-
-        messages.success(request, "Team created successfully.")
-        return redirect("student_dashboard")
-
-
-
-    # temporary flag: later we will also check team membership here
-    can_create_team = (accepted_invites_count >= 3) and (not already_in_team)
-
     context = {
         "student": student,
-        "invitations": received_invites,
-        "sent_invitations": sent_invites,
-        "accepted_invites_count": accepted_invites_count,
-        "can_create_team": can_create_team,
-        "already_in_team":already_in_team,
-        "team":team,
+        "team": team,
+        "already_in_team": already_in_team,
+        "received_invitations": received_invitations,
+        "sent_invitations": sent_invitations,
+        "first_review": first_review,
+        "second_review": second_review,
+        "final_review": final_review,
     }
     return render(request, "dashboards/student_dashboard.html", context)
 
@@ -167,25 +151,37 @@ def send_invite(request):
     if user.user_type != User.UserType.STUDENT:
         return redirect("dashboard_redirect")
 
-    student = StudentProfile.objects.get(user=user)
+    student = StudentProfile.objects.select_related(
+        "department", "batch", "class_section"
+    ).get(user=user)
 
     if request.method == "POST":
-        roll = request.POST.get("roll_number")
+        roll = (request.POST.get("roll_number") or "").strip().upper()
 
         try:
-            target = StudentProfile.objects.get(
-                roll_number=roll,
-                department=student.department,
-                batch=student.batch,
-            )
+            # Look up by roll only; department/batch/section will be checked by can_be_teammates
+            target = StudentProfile.objects.select_related(
+                "department", "batch", "class_section"
+            ).get(roll_number=roll)
         except StudentProfile.DoesNotExist:
-            messages.error(request, "Student with that roll was not found in your batch.")
+            messages.error(request, "Student with that roll number does not exist.")
             return redirect("student_dashboard")
 
+        # Cannot invite yourself
         if target == student:
             messages.error(request, "You cannot invite yourself.")
             return redirect("student_dashboard")
 
+        # Enforce department+batch and optional section rule
+        if not can_be_teammates(student, target):
+            messages.error(
+                request,
+                "You can invite only students in your department and batch "
+                "(section rule depends on department policy).",
+            )
+            return redirect("student_dashboard")
+
+        # Limit pending invitations *to that target*
         pending_count = Invitation.objects.filter(
             to_student=target,
             status="PENDING",
@@ -194,6 +190,7 @@ def send_invite(request):
             messages.error(request, "This student already has 5 pending invitations.")
             return redirect("student_dashboard")
 
+        # Avoid duplicate pending invite from same student to same target
         existing = Invitation.objects.filter(
             from_student=student,
             to_student=target,
@@ -211,7 +208,6 @@ def send_invite(request):
         return redirect("student_dashboard")
 
     return redirect("student_dashboard")
-
 
 @login_required
 def respond_invite(request, invite_id, action):

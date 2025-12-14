@@ -116,6 +116,14 @@ class Team(models.Model):
         on_delete=models.SET_NULL,
     )
 
+    # NEW: official team id, filled later by dev team
+    team_id_code = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        help_text="Official team ID assigned after 0th review",
+    )
+
     is_approved = models.BooleanField(default=False)   # proposal approved
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -218,3 +226,38 @@ class Invitation(models.Model):
     def __str__(self):
         return f"Invite {self.from_student} -> {self.to_student} ({self.status})"
 
+class Review(models.Model):
+    class Type(models.TextChoices):
+        FIRST = "FIRST", "First review"
+        SECOND = "SECOND", "Second review"
+        FINAL = "FINAL", "Final review"
+
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="reviews")
+    review_type = models.CharField(max_length=10, choices=Type.choices)
+    date = models.DateField()
+    created_by = models.ForeignKey(
+        FacultyProfile, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="created_reviews"
+    )
+    panel_members = models.ManyToManyField(
+        FacultyProfile, related_name="panel_reviews", blank=True
+    )
+    requirements = models.TextField(
+        blank=True,
+        help_text="Instructions/requirements for the team for this review."
+    )
+
+    class Meta:
+        unique_together = ("team", "review_type")
+
+    def __str__(self):
+        return f"{self.team.name} - {self.get_review_type_display()}"
+
+class ReviewRubric(models.Model):
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name="rubrics")
+    name = models.CharField(max_length=100)         # e.g. Presentation
+    weight = models.PositiveIntegerField()          # e.g. 20 for 20%
+    max_score = models.PositiveIntegerField(default=10)
+
+    def __str__(self):
+        return f"{self.name} ({self.weight}%)"
