@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from core import views as core_views
+from core import views as core_views, staff_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -34,4 +34,43 @@ urlpatterns = [
         name="respond_invite",
     ),
     path("student/team/create/", core_views.create_team_view, name="create_team"),
+    path("student/proposal/", core_views.proposal_view, name="proposal"),
+        # Coordinator views
+    path(
+        "coordinator/proposals/",
+        staff_views.coordinator_proposal_list,
+        name="coordinator_proposals",
+    ),
+    path(
+        "coordinator/proposals/<int:proposal_id>/",
+        staff_views.coordinator_proposal_detail,
+        name="coordinator_proposal_detail",
+    ),
+    path(
+        "hod/proposals/",
+        staff_views.hod_proposal_list,
+        name="hod_proposal_list",
+    ),
+
+    path(
+        "hod/proposals/<int:proposal_id>/",
+        staff_views.hod_proposal_detail,
+        name="hod_proposal_detail",
+    ),
+    path("mentor/dashboard/", staff_views.mentor_dashboard, name="mentor_dashboard"),
+    path("advisor/dashboard/", staff_views.advisor_dashboard, name="advisor_dashboard"),
+    path("hod/faculty/", staff_views.hod_faculty_list, name="hod_faculty_list"),
+
+        # Coordinator review management
+    path(
+        "coordinator/team/<int:team_id>/reviews/",
+        staff_views.coordinator_team_reviews,
+        name="coordinator_team_reviews",
+    ),
+    path(
+        "coordinator/team/<int:team_id>/reviews/<str:review_type>/",
+        staff_views.coordinator_edit_review,
+        name="coordinator_edit_review",
+    ),
+
 ]

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Team Reviews{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Reviews for {{ team.name }}</h3>
+
+<p class="mb-3">
+  Department: {{ team.department.name }} |
+  Class: {{ team.class_section.name }} |
+  Batch: {{ team.batch.name }}
+</p>
+
+<div class="mb-3">
+  <a href="{% url 'coordinator_edit_review' team.id 'FIRST' %}" class="btn btn-outline-primary me-2">
+    First review
+  </a>
+  <a href="{% url 'coordinator_edit_review' team.id 'SECOND' %}" class="btn btn-outline-primary me-2">
+    Second review
+  </a>
+  <a href="{% url 'coordinator_edit_review' team.id 'FINAL' %}" class="btn btn-outline-primary">
+    Final review
+  </a>
+</div>
+
+{% if reviews %}
+  <table class="table table-sm table-hover">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Date</th>
+        <th>Panel members</th>
+        <th>Rubrics</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reviews %}
+        <tr>
+          <td>{{ r.get_review_type_display }}</td>
+          <td>{{ r.date|date:"d M Y" }}</td>
+          <td>
+            {% for p in r.panel_members.all %}
+              {{ p.user.get_full_name|default:p.user.username }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+              (none)
+            {% endfor %}
+          </td>
+          <td>
+            {% for rb in r.rubrics.all %}
+              {{ rb.name }} ({{ rb.weight }}%) {% if not forloop.last %}|{% endif %}
+            {% empty %}
+              (none)
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="text-muted">No reviews scheduled yet.</p>
+{% endif %}
+{% endblock %}

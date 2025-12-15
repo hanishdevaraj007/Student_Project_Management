@@ -1,6 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Faculty Dashboard{% endblock %}
+
 {% block content %}
-<h3>Faculty Dashboard</h3>
-<p>Welcome, {{ user.username }}. Faculty view will come here.</p>
+<h3 class="mb-3">Faculty Dashboard</h3>
+
+<p class="mb-3">
+  Welcome, {{ user.get_full_name|default:user.username }}. Faculty view is shown below.
+</p>
+
+<div class="mb-3">
+  {% if user.facultyprofile.is_coordinator %}
+    <a href="{% url 'coordinator_proposals' %}" class="btn btn-primary me-2">
+      Coordinator proposals
+    </a>
+  {% endif %}
+
+  <a href="{% url 'mentor_dashboard' %}" class="btn btn-outline-primary me-2">
+    Mentor dashboard
+  </a>
+
+  {% if user.facultyprofile.is_advisor %}
+  <a href="{% url 'advisor_dashboard' %}" class="btn btn-outline-secondary">
+    Advisor dashboard
+  </a>
+  {% endif %}
+</div>
 {% endblock %}

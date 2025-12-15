@@ -62,7 +62,8 @@ class FacultyProfile(models.Model):
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     employee_id = models.CharField(max_length=50, unique=True)
     is_hod = models.BooleanField(default=False)
-
+    is_coordinator = models.BooleanField(default=False)
+    is_advisor = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.user.get_full_name() or self.user.username} - {self.employee_id}"
 
@@ -115,11 +116,88 @@ class Team(models.Model):
         on_delete=models.SET_NULL,
     )
 
+    # NEW: official team id, filled later by dev team
+    team_id_code = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        help_text="Official team ID assigned after 0th review",
+    )
+
     is_approved = models.BooleanField(default=False)   # proposal approved
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name} ({self.department.name} - {self.batch})"
+    
+class ProjectProposal(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        APPROVED = "APPROVED", "Approved"
+        REVISION = "REVISION", "Revision required"
+        REJECTED = "REJECTED", "Rejected"
+
+    # one proposal per team
+    team = models.OneToOneField(
+        Team,
+        on_delete=models.CASCADE,
+        related_name="proposal",
+    )
+
+    # core fields filled by TL
+    title = models.CharField(max_length=200)
+    problem_statement = models.TextField()
+    objectives = models.TextField(blank=True)
+    domain = models.CharField(max_length=200, blank=True)  # domain / technology
+    expected_outcomes = models.TextField(blank=True)
+    estimated_duration_weeks = models.IntegerField(null=True, blank=True)
+
+    preferred_mentor = models.ForeignKey(
+        FacultyProfile,
+        related_name="preferred_projects",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    coordinator_comment = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.team.name} - {self.title}"
+    
+def proposal_upload_path(instance, filename):
+    # stored as: proposals/<team_name>/<timestamp>_<filename>
+    import time
+    safe_team = instance.proposal.team.name.replace(" ", "_")
+    return f"proposals/{safe_team}/{int(time.time())}_{filename}"
+
+class ProposalDocument(models.Model):
+    proposal = models.ForeignKey(
+        ProjectProposal,
+        on_delete=models.CASCADE,
+        related_name="documents",
+    )
+    file = models.FileField(upload_to=proposal_upload_path)
+    uploaded_by = models.ForeignKey(
+        StudentProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.proposal.team.name} - {self.file.name}"
+
+
 
 class Invitation(models.Model):
     """
@@ -148,38 +226,38 @@ class Invitation(models.Model):
     def __str__(self):
         return f"Invite {self.from_student} -> {self.to_student} ({self.status})"
 
-class ProjectProposal(models.Model):
-    """
-    Proposal created by TL when forming team.
-    """
-    team = models.OneToOneField(Team, on_delete=models.CASCADE)
+class Review(models.Model):
+    class Type(models.TextChoices):
+        FIRST = "FIRST", "First review"
+        SECOND = "SECOND", "Second review"
+        FINAL = "FINAL", "Final review"
 
-    title = models.CharField(max_length=200)
-    problem_statement = models.TextField()
-    objectives = models.TextField()
-    domain = models.CharField(max_length=200)          # domain/technology
-    expected_outcomes = models.TextField()
-    estimated_duration_weeks = models.IntegerField()
-
-    preferred_mentor = models.ForeignKey(
-        FacultyProfile,
-        related_name="preferred_projects",
-        null=True,
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="reviews")
+    review_type = models.CharField(max_length=10, choices=Type.choices)
+    date = models.DateField()
+    created_by = models.ForeignKey(
+        FacultyProfile, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="created_reviews"
+    )
+    panel_members = models.ManyToManyField(
+        FacultyProfile, related_name="panel_reviews", blank=True
+    )
+    requirements = models.TextField(
         blank=True,
-        on_delete=models.SET_NULL,
+        help_text="Instructions/requirements for the team for this review."
     )
 
-    PROPOSAL_STATUS = [
-        ("PENDING", "Pending"),
-        ("APPROVED", "Approved"),
-        ("REVISION", "Revision Required"),
-        ("REJECTED", "Rejected"),
-    ]
-    status = models.CharField(max_length=10, choices=PROPOSAL_STATUS, default="PENDING")
-    coordinator_comment = models.TextField(blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        unique_together = ("team", "review_type")
 
     def __str__(self):
-        return f"{self.title} ({self.team})"
+        return f"{self.team.name} - {self.get_review_type_display()}"
+
+class ReviewRubric(models.Model):
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name="rubrics")
+    name = models.CharField(max_length=100)         # e.g. Presentation
+    weight = models.PositiveIntegerField()          # e.g. 20 for 20%
+    max_score = models.PositiveIntegerField(default=10)
+
+    def __str__(self):
+        return f"{self.name} ({self.weight}%)"

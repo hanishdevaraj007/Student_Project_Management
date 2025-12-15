@@ -128,3 +128,6 @@ STATIC_URL = 'static/'
 AUTH_USER_MODEL = "core.User"
 
 LOGIN_URL = "/login/"
+
+# Allow students from different sections within same dept+batch?
+ALLOW_CROSS_SECTION_TEAMS = True

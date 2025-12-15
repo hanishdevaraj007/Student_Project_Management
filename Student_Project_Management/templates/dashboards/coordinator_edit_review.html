@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Edit Review{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">
+  {{ review.get_review_type_display }} – {{ team.name }}
+</h3>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<form method="post" class="mb-4">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label">Review date</label>
+    <input type="date" name="date" class="form-control"
+           value="{{ review.date|date:'Y-m-d' }}">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Requirements for team</label>
+    <textarea name="requirements" rows="3" class="form-control">{{ review.requirements }}</textarea>
+    <div class="form-text">
+      Mention expectations like modules to complete, documentation %, etc.
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Panel members</label>
+    <select name="panel_members" multiple class="form-select">
+      {% for f in panel_candidates %}
+        <option value="{{ f.id }}"
+          {% if f in review.panel_members.all %}selected{% endif %}>
+          {{ f.user.get_full_name|default:f.user.username }}
+        </option>
+      {% endfor %}
+    </select>
+    <div class="form-text">
+      Hold Ctrl (or Cmd) to select multiple faculty.
+    </div>
+  </div>
+
+  <h5 class="mt-4">Rubrics</h5>
+  <p class="text-muted">Add rows for presentation, communication, understanding, etc.</p>
+
+  <div id="rubrics-container">
+    {% for rb in review.rubrics.all %}
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <input type="text" name="rubric_name" class="form-control"
+                 value="{{ rb.name }}" placeholder="Rubric name">
+        </div>
+        <div class="col-md-3">
+          <input type="number" name="rubric_weight" class="form-control"
+                 value="{{ rb.weight }}" placeholder="Weight %">
+        </div>
+        <div class="col-md-3">
+          <input type="number" name="rubric_max_score" class="form-control"
+                 value="{{ rb.max_score }}" placeholder="Max score">
+        </div>
+      </div>
+    {% empty %}
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <input type="text" name="rubric_name" class="form-control"
+                 placeholder="Rubric name">
+        </div>
+        <div class="col-md-3">
+          <input type="number" name="rubric_weight" class="form-control"
+                 placeholder="Weight %">
+        </div>
+        <div class="col-md-3">
+          <input type="number" name="rubric_max_score" class="form-control"
+                 placeholder="Max score">
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <button type="submit" class="btn btn-primary mt-3">Save review</button>
+  <a href="{% url 'coordinator_team_reviews' team.id %}" class="btn btn-secondary mt-3 ms-2">
+    Back to team reviews
+  </a>
+</form>
+{% endblock %}
