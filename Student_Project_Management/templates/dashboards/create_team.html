@@ -2,50 +2,99 @@
 {% block title %}Create Team{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Create Team</h3>
 
+<!-- ===== Page Header ===== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold">👥 Create Team</h3>
+    <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        ← Back to Dashboard
+    </a>
+</div>
+
+<!-- ===== Alerts ===== -->
 {% if messages %}
     {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+        <div class="alert alert-{{ message.tags }} py-2">
+            {{ message }}
+        </div>
     {% endfor %}
 {% endif %}
 
-<p class="mb-3">
-    You have {{ accepted_invites_count }} accepted invitations.
-</p>
+<!-- ===== Info Card ===== -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <p class="mb-0">
+            You have <strong>{{ accepted_invites_count }}</strong> accepted invitation{{ accepted_invites_count|pluralize }}.
+        </p>
+        <p class="text-muted small mb-0">
+            Select <strong>2 or 3 students</strong> from accepted invitations to form a team.
+        </p>
+    </div>
+</div>
 
+<!-- ===== Create Team Form ===== -->
 <form method="post">
     {% csrf_token %}
 
-    <div class="mb-3">
-        <label class="form-label">Team name</label>
-        <input type="text" name="team_name" class="form-control" required>
+    <!-- Team Name -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Team Details</h5>
+
+            <div class="mb-3">
+                <label class="form-label">Team Name</label>
+                <input
+                    type="text"
+                    name="team_name"
+                    class="form-control"
+                    placeholder="Enter a unique team name"
+                    required
+                >
+            </div>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Select members (2 or 3 students)</label>
-        {% if accepted_invites %}
-            {% for invite in accepted_invites %}
-                <div class="form-check">
-                    <input
-                        class="form-check-input"
-                        type="checkbox"
-                        name="member_ids"
-                        value="{{ invite.to_student.id }}"
-                        id="member{{ invite.to_student.id }}"
-                    >
-                    <label class="form-check-label" for="member{{ invite.to_student.id }}">
-                        {{ invite.to_student.user.get_full_name|default:invite.to_student.user.username }}
-                        ({{ invite.to_student.roll_number }})
-                    </label>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p class="text-muted">No accepted invitations to choose from.</p>
-        {% endif %}
+    <!-- Members -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Select Team Members</h5>
+
+            {% if accepted_invites %}
+                {% for invite in accepted_invites %}
+                    <div class="form-check mb-2">
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            name="member_ids"
+                            value="{{ invite.to_student.id }}"
+                            id="member{{ invite.to_student.id }}"
+                        >
+                        <label class="form-check-label" for="member{{ invite.to_student.id }}">
+                            {{ invite.to_student.user.get_full_name|default:invite.to_student.user.username }}
+                            <span class="text-muted">
+                                ({{ invite.to_student.roll_number }})
+                            </span>
+                        </label>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">
+                    No accepted invitations available.
+                </p>
+            {% endif %}
+        </div>
     </div>
 
-    <button type="submit" class="btn btn-primary">Create Team</button>
-    <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">Cancel</a>
+    <!-- Actions -->
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            ✅ Create Team
+        </button>
+        <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">
+            Cancel
+        </a>
+    </div>
+
 </form>
+
 {% endblock %}

@@ -2,76 +2,125 @@
 {% block title %}Coordinator Proposals{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Project Proposals (Coordinator)</h3>
 
+<!-- ===== Header ===== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold">📑 Project Proposals – Coordinator</h3>
+    <a href="{% url 'faculty_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+        ← Back
+    </a>
+</div>
+
+<!-- ===== Flash messages ===== -->
 {% if messages %}
   {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    <div class="alert alert-{{ message.tags }} py-2">
+      {{ message }}
+    </div>
   {% endfor %}
 {% endif %}
 
-<p class="mb-2">
-  <strong>Coordinator:</strong>
-  {{ faculty.user.get_full_name|default:faculty.user.username }}
-  ({{ faculty.department.name }} )
-</p>
+<!-- ===== Coordinator Info ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <strong>Coordinator:</strong>
+        {{ faculty.user.get_full_name|default:faculty.user.username }}
+        <span class="text-muted">
+            ({{ faculty.department.name }})
+        </span>
+    </div>
+</div>
 
-<form method="get" class="row g-2 mb-3">
-  <div class="col-md-3">
-    <select name="status" class="form-select">
-      <option value="">All statuses</option>
-      {% for value,label in status_choices %}
-        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
-          {{ label }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-md-4">
-    <input type="text" name="q" class="form-control" placeholder="Search by team or title"
-           value="{{ search_query }}">
-  </div>
-  <div class="col-md-2">
-    <button type="submit" class="btn btn-primary w-100">Filter</button>
-  </div>
-  <div class="col-md-2">
-    <a href="{% url 'coordinator_proposals' %}" class="btn btn-secondary w-100">Clear</a>
-  </div>
-</form>
+<!-- ===== Filters ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All statuses</option>
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
+            <div class="col-md-5">
+                <label class="form-label">Search</label>
+                <input type="text"
+                       name="q"
+                       class="form-control"
+                       placeholder="Search by team name or proposal title"
+                       value="{{ search_query }}">
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    Apply
+                </button>
+            </div>
+
+            <div class="col-md-2">
+                <a href="{% url 'coordinator_proposals' %}"
+                   class="btn btn-outline-secondary w-100">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== Proposals Table ===== -->
 {% if proposals %}
-  <table class="table table-sm table-hover">
-    <thead>
-      <tr>
-        <th>Team</th>
-        <th>Class</th>
-        <th>Title</th>
-        <th>Status</th>
-        <th>Last updated</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for prop in proposals %}
-        <tr>
-          <td>{{ prop.team.name }}</td>
-          <td>{{ prop.team.class_section.name }}</td>
-          <td>{{ prop.title|default:"(no title)" }}</td>
-          <td>{{ prop.get_status_display }}</td>
-          <td>{{ prop.updated_at|date:"d M Y H:i" }}</td>
-          <td>
-            <a href="{% url 'coordinator_proposal_detail' prop.id %}" class="btn btn-sm btn-outline-primary me-2">
-              View / Update
-          </a>
-          <a href="{% url 'coordinator_team_reviews' prop.team.id %}" class="btn btn-sm btn-outline-secondary">
-            Reviews
-          </a>
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Team</th>
+                        <th>Class</th>
+                        <th>Project Title</th>
+                        <th>Status</th>
+                        <th>Last Updated</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prop in proposals %}
+                    <tr>
+                        <td>{{ prop.team.name }}</td>
+                        <td>{{ prop.team.class_section.name }}</td>
+                        <td>{{ prop.title|default:"(No title)" }}</td>
+                        <td>
+                            <span class="badge bg-info text-dark">
+                                {{ prop.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ prop.updated_at|date:"d M Y H:i" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'coordinator_proposal_detail' prop.id %}"
+                               class="btn btn-sm btn-outline-primary me-1">
+                                View / Update
+                            </a>
+                            <a href="{% url 'coordinator_team_reviews' prop.team.id %}"
+                               class="btn btn-sm btn-outline-secondary">
+                                Reviews
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% else %}
-  <p class="text-muted">No proposals found for your filters.</p>
+<div class="alert alert-light border text-muted">
+    No proposals found for the selected filters.
+</div>
 {% endif %}
+
 {% endblock %}

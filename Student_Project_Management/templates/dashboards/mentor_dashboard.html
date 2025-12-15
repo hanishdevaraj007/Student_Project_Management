@@ -2,74 +2,123 @@
 {% block title %}Mentor Dashboard{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Mentor Dashboard</h3>
 
-<p class="mb-3">
-  Welcome, {{ faculty.user.get_full_name|default:faculty.user.username }}.
-  These are the teams assigned to you as mentor.
-</p>
+<!-- ===== Header ===== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold">👨‍🏫 Mentor Dashboard</h3>
+</div>
+
+<!-- ===== Welcome ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <p class="mb-0">
+            Welcome,
+            <strong>{{ faculty.user.get_full_name|default:faculty.user.username }}</strong>.
+            Below are the teams assigned to you as mentor.
+        </p>
+    </div>
+</div>
 
 {% if teams %}
-  {% for t in teams %}
-    <div class="card mb-3">
-      <div class="card-body">
-        <h5 class="card-title">{{ t.name }}</h5>
+    {% for t in teams %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
 
-        <p class="mb-1">
-          <strong>Team ID:</strong> {{ t.team_id_code|default:"(not assigned)" }} |
-          <strong>Department:</strong> {{ t.department.name }} |
-          <strong>Class:</strong> {{ t.class_section.name }} |
-          <strong>Batch:</strong> {{ t.batch.name }}
-        </p>
+                <!-- Team Header -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">{{ t.name }}</h5>
+                    <span class="badge bg-secondary">
+                        Team ID: {{ t.team_id_code|default:"N/A" }}
+                    </span>
+                </div>
 
-        <p class="mb-1">
-          <strong>Members:</strong>
-          {% for m in t.members.all %}
-            {{ m.user.get_full_name|default:m.user.username }}{% if not forloop.last %}, {% endif %}
-          {% endfor %}
-        </p>
+                <!-- Team Meta -->
+                <p class="mb-2 text-muted">
+                    <strong>Department:</strong> {{ t.department.name }} |
+                    <strong>Class:</strong> {{ t.class_section.name }} |
+                    <strong>Batch:</strong> {{ t.batch.name }}
+                </p>
 
-        {% if t.proposal %}
-          <p class="mb-1"><strong>Project title:</strong> {{ t.proposal.title }}</p>
-          <p class="mb-1"><strong>Status:</strong> {{ t.proposal.get_status_display }}</p>
-          <p class="mb-2">
-            <strong>Coordinator comment:</strong>
-            <span style="white-space: pre-wrap;">{{ t.proposal.coordinator_comment|default:"(none)" }}</span>
-          </p>
+                <!-- Members -->
+                <p class="mb-3">
+                    <strong>Members:</strong>
+                    {% for m in t.members.all %}
+                        {{ m.user.get_full_name|default:m.user.username }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
 
-          <p class="mb-1"><strong>Latest documents:</strong></p>
-          <ul class="mb-2">
-            {% for doc in t.proposal.documents.all %}
-              <li>
-                <a href="{{ doc.file.url }}" target="_blank">
-                  Version {{ doc.version }} – {{ doc.uploaded_at|date:"d M Y H:i" }}
-                </a>
-              </li>
-            {% empty %}
-              <li class="text-muted">No documents uploaded yet.</li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="text-muted mb-2">No proposal submitted yet.</p>
-        {% endif %}
+                <hr>
 
-        <h6>Review requirements</h6>
-        {% if t.reviews.all %}
-          <ul class="mb-0">
-            {% for r in t.reviews.all %}
-              <li>
-                {{ r.get_review_type_display }}:
-                {{ r.requirements|default:"No specific requirements set yet." }}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="text-muted mb-0">No reviews scheduled yet.</p>
-        {% endif %}
-      </div>
-    </div>
-  {% endfor %}
+                <!-- Proposal Section -->
+                {% if t.proposal %}
+                    <h6 class="fw-semibold">📄 Project Proposal</h6>
+
+                    <p class="mb-1">
+                        <strong>Title:</strong> {{ t.proposal.title|default:"(No title)" }}
+                    </p>
+
+                    <p class="mb-1">
+                        <strong>Status:</strong>
+                        {% if t.proposal.status == "APPROVED" %}
+                            <span class="badge bg-success">{{ t.proposal.get_status_display }}</span>
+                        {% elif t.proposal.status == "REJECTED" %}
+                            <span class="badge bg-danger">{{ t.proposal.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">{{ t.proposal.get_status_display }}</span>
+                        {% endif %}
+                    </p>
+
+                    <p class="mb-3">
+                        <strong>Coordinator Comment:</strong><br>
+                        <span class="text-muted" style="white-space: pre-wrap;">
+                            {{ t.proposal.coordinator_comment|default:"(No comment)" }}
+                        </span>
+                    </p>
+
+                    <!-- Documents -->
+                    <h6 class="fw-semibold">📎 Latest Documents</h6>
+                    <ul class="mb-3">
+                        {% for doc in t.proposal.documents.all %}
+                            <li>
+                                <a href="{{ doc.file.url }}" target="_blank">
+                                    Version {{ doc.version }}
+                                </a>
+                                <span class="text-muted">
+                                    ({{ doc.uploaded_at|date:"d M Y H:i" }})
+                                </span>
+                            </li>
+                        {% empty %}
+                            <li class="text-muted">No documents uploaded yet.</li>
+                        {% endfor %}
+                    </ul>
+
+                {% else %}
+                    <p class="text-muted mb-3">📭 No proposal submitted yet.</p>
+                {% endif %}
+
+                <hr>
+
+                <!-- Reviews -->
+                <h6 class="fw-semibold">📝 Review Requirements</h6>
+
+                {% if t.reviews.all %}
+                    <ul class="mb-0">
+                        {% for r in t.reviews.all %}
+                            <li>
+                                <strong>{{ r.get_review_type_display }}:</strong>
+                                {{ r.requirements|default:"No specific requirements set yet." }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted mb-0">No reviews scheduled yet.</p>
+                {% endif %}
+
+            </div>
+        </div>
+    {% endfor %}
 {% else %}
-  <p class="text-muted">No teams assigned to you as mentor yet.</p>
+    <p class="text-muted">No teams assigned to you as mentor yet.</p>
 {% endif %}
+
 {% endblock %}

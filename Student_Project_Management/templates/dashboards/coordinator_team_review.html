@@ -2,60 +2,100 @@
 {% block title %}Team Reviews{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Reviews for {{ team.name }}</h3>
 
-<p class="mb-3">
-  Department: {{ team.department.name }} |
-  Class: {{ team.class_section.name }} |
-  Batch: {{ team.batch.name }}
-</p>
-
-<div class="mb-3">
-  <a href="{% url 'coordinator_edit_review' team.id 'FIRST' %}" class="btn btn-outline-primary me-2">
-    First review
-  </a>
-  <a href="{% url 'coordinator_edit_review' team.id 'SECOND' %}" class="btn btn-outline-primary me-2">
-    Second review
-  </a>
-  <a href="{% url 'coordinator_edit_review' team.id 'FINAL' %}" class="btn btn-outline-primary">
-    Final review
-  </a>
+<!-- ===== Header ===== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold">📝 Reviews – {{ team.name }}</h3>
+    <a href="{% url 'coordinator_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+        ← Back
+    </a>
 </div>
 
+<!-- ===== Team Info Card ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4"><strong>Department:</strong> {{ team.department.name }}</div>
+            <div class="col-md-4"><strong>Class:</strong> {{ team.class_section.name }}</div>
+            <div class="col-md-4"><strong>Batch:</strong> {{ team.batch.name }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Review Actions ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h6 class="fw-semibold mb-3">Create / Edit Reviews</h6>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'coordinator_edit_review' team.id 'FIRST' %}"
+               class="btn btn-outline-primary">
+                First Review
+            </a>
+            <a href="{% url 'coordinator_edit_review' team.id 'SECOND' %}"
+               class="btn btn-outline-primary">
+                Second Review
+            </a>
+            <a href="{% url 'coordinator_edit_review' team.id 'FINAL' %}"
+               class="btn btn-outline-primary">
+                Final Review
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Review Table ===== -->
 {% if reviews %}
-  <table class="table table-sm table-hover">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Date</th>
-        <th>Panel members</th>
-        <th>Rubrics</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in reviews %}
-        <tr>
-          <td>{{ r.get_review_type_display }}</td>
-          <td>{{ r.date|date:"d M Y" }}</td>
-          <td>
-            {% for p in r.panel_members.all %}
-              {{ p.user.get_full_name|default:p.user.username }}{% if not forloop.last %}, {% endif %}
-            {% empty %}
-              (none)
-            {% endfor %}
-          </td>
-          <td>
-            {% for rb in r.rubrics.all %}
-              {{ rb.name }} ({{ rb.weight }}%) {% if not forloop.last %}|{% endif %}
-            {% empty %}
-              (none)
-            {% endfor %}
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h6 class="fw-semibold mb-3">Scheduled Reviews</h6>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Review Type</th>
+                        <th>Date</th>
+                        <th>Panel Members</th>
+                        <th>Evaluation Rubrics</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reviews %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-primary">
+                                {{ r.get_review_type_display }}
+                            </span>
+                        </td>
+                        <td>{{ r.date|date:"d M Y" }}</td>
+                        <td>
+                            {% for p in r.panel_members.all %}
+                                {{ p.user.get_full_name|default:p.user.username }}
+                                {% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                <span class="text-muted">(Not assigned)</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for rb in r.rubrics.all %}
+                                <span class="badge bg-secondary">
+                                    {{ rb.name }} ({{ rb.weight }}%)
+                                </span>
+                            {% empty %}
+                                <span class="text-muted">(No rubrics)</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% else %}
-  <p class="text-muted">No reviews scheduled yet.</p>
+<div class="alert alert-light border text-muted">
+    No reviews scheduled yet for this team.
+</div>
 {% endif %}
+
 {% endblock %}

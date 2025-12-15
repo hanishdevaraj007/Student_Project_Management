@@ -2,130 +2,190 @@
 {% block title %}Proposal Detail{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Proposal Detail</h3>
 
+<!-- ===== Header ===== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold">📄 Proposal Details</h3>
+    <a href="{% url 'coordinator_proposals' %}" class="btn btn-sm btn-outline-secondary">
+        ← Back to proposals
+    </a>
+</div>
+
+<!-- ===== Messages ===== -->
 {% if messages %}
   {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+    <div class="alert alert-{{ message.tags }} py-2">
+      {{ message }}
+    </div>
   {% endfor %}
 {% endif %}
 
-<p class="mb-1"><strong>Team:</strong> {{ proposal.team.name }}</p>
-<p class="mb-1"><strong>Class:</strong> {{ proposal.team.class_section.name }}</p>
-<p class="mb-1"><strong>Department:</strong> {{ proposal.team.department.name }}</p>
-<p class="mb-3"><strong>Batch:</strong> {{ proposal.team.batch.name }}</p>
-<p class="mb-1"><strong>Team ID:</strong> {{ proposal.team.team_id_code|default:"(not assigned)" }}</p>
-<p class="mb-3">
-  <a href="{% url 'coordinator_team_reviews' proposal.team.id %}" class="btn btn-sm btn-outline-secondary">
-    Manage reviews for this team
-  </a>
-</p>
+<!-- ===== Team Summary ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4"><strong>Team:</strong> {{ proposal.team.name }}</div>
+            <div class="col-md-4"><strong>Team ID:</strong> {{ proposal.team.team_id_code|default:"(Not assigned)" }}</div>
+            <div class="col-md-4"><strong>Status:</strong>
+                <span class="badge bg-info text-dark">
+                    {{ proposal.get_status_display }}
+                </span>
+            </div>
 
+            <div class="col-md-4"><strong>Department:</strong> {{ proposal.team.department.name }}</div>
+            <div class="col-md-4"><strong>Class:</strong> {{ proposal.team.class_section.name }}</div>
+            <div class="col-md-4"><strong>Batch:</strong> {{ proposal.team.batch.name }}</div>
+        </div>
 
-<div class="mb-3">
-  <strong>Title:</strong>
-  <div>{{ proposal.title|default:"Not set" }}</div>
-</div>
-
-<div class="mb-3">
-  <strong>Problem statement:</strong>
-  <div style="white-space: pre-wrap;">{{ proposal.problem_statement|default:"Not set" }}</div>
-</div>
-
-<div class="mb-3">
-  <strong>Objectives:</strong>
-  <div style="white-space: pre-wrap;">{{ proposal.objectives|default:"Not set" }}</div>
-</div>
-
-<div class="mb-3">
-  <strong>Domain / technology:</strong>
-  <div>{{ proposal.domain|default:"Not set" }}</div>
-</div>
-
-<div class="mb-3">
-  <strong>Expected outcomes:</strong>
-  <div style="white-space: pre-wrap;">{{ proposal.expected_outcomes|default:"Not set" }}</div>
-</div>
-
-<div class="mb-3">
-  <strong>Estimated duration (weeks):</strong>
-  <div>
-    {% if proposal.estimated_duration_weeks %}
-      {{ proposal.estimated_duration_weeks }}
-    {% else %}
-      Not set
-    {% endif %}
-  </div>
-</div>
-
-<div class="mb-3">
-  <strong>Uploaded PDFs (versions):</strong>
-  {% if documents %}
-    <ul>
-      {% for doc in documents %}
-        <li>
-          <a href="{{ doc.file.url }}" target="_blank">
-            Version {{ forloop.counter }} – {{ doc.uploaded_at|date:"d M Y H:i" }}
-          </a>
-          {% if doc.uploaded_by %}
-            (by {{ doc.uploaded_by.user.get_full_name|default:doc.uploaded_by.user.username }})
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="text-muted mb-0">No files uploaded yet.</p>
-  {% endif %}
-</div>
-
-<hr class="my-4">
-
-<h5>Coordinator decision</h5>
-
-{% if is_hod_readonly %}
-  <p>
-    <strong>Status:</strong> {{ proposal.get_status_display }}<br>
-    <strong>Coordinator comment:</strong>
-    <span style="white-space: pre-wrap;">{{ proposal.coordinator_comment|default:"(no comment)" }}</span>
-  </p>
-  <a href="{% url 'hod_proposal_list' %}" class="btn btn-secondary">Back to list</a>
-{% else %}
-  <form method="post" class="mb-3">
-    {% csrf_token %}
-    <div class="mb-3">
-      <label class="form-label">Status</label>
-      <select name="status" class="form-select" required>
-        {% for value,label in status_choices %}
-          <option value="{{ value }}" {% if proposal.status == value %}selected{% endif %}>
-            {{ label }}
-          </option>
-        {% endfor %}
-      </select>
+        <div class="mt-3">
+            <a href="{% url 'coordinator_team_reviews' proposal.team.id %}"
+               class="btn btn-sm btn-outline-primary">
+                Manage team reviews
+            </a>
+        </div>
     </div>
+</div>
 
-    <div class="mb-3">
-      <label class="form-label">Mentor (optional, on approval)</label>
-      <select name="mentor_id" class="form-select">
-        <option value="">-- No mentor assigned --</option>
-        {% for f in possible_mentors %}
-          <option value="{{ f.id }}" {% if proposal.team.mentor and proposal.team.mentor.id == f.id %}selected{% endif %}>
-            {{ f.user.get_full_name|default:f.user.username }}
-          </option>
-        {% endfor %}
-      </select>
-      <div class="form-text">
-        Choose a mentor when approving; leave blank if not decided.
-      </div>
+<!-- ===== Proposal Content ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="mb-3">📌 Proposal Information</h5>
+
+        <div class="mb-3">
+            <strong>Title</strong>
+            <div class="text-muted">{{ proposal.title|default:"Not set" }}</div>
+        </div>
+
+        <div class="mb-3">
+            <strong>Problem Statement</strong>
+            <div class="border rounded p-2 bg-light" style="white-space: pre-wrap;">
+                {{ proposal.problem_statement|default:"Not set" }}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <strong>Objectives</strong>
+            <div class="border rounded p-2 bg-light" style="white-space: pre-wrap;">
+                {{ proposal.objectives|default:"Not set" }}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <strong>Domain / Technology</strong>
+            <div class="text-muted">{{ proposal.domain|default:"Not set" }}</div>
+        </div>
+
+        <div class="mb-3">
+            <strong>Expected Outcomes</strong>
+            <div class="border rounded p-2 bg-light" style="white-space: pre-wrap;">
+                {{ proposal.expected_outcomes|default:"Not set" }}
+            </div>
+        </div>
+
+        <div class="mb-0">
+            <strong>Estimated Duration</strong>
+            <div>
+                {% if proposal.estimated_duration_weeks %}
+                    {{ proposal.estimated_duration_weeks }} weeks
+                {% else %}
+                    Not set
+                {% endif %}
+            </div>
+        </div>
     </div>
+</div>
 
+<!-- ===== Uploaded Documents ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="mb-3">📎 Uploaded Proposal PDFs</h5>
 
-    <div class="mb-3">
-      <label class="form-label">Coordinator comment (optional)</label>
-      <textarea name="coordinator_comment" rows="3" class="form-control">{{ proposal.coordinator_comment }}</textarea>
+        {% if documents %}
+            <ul class="list-group list-group-flush">
+                {% for doc in documents %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{{ doc.file.url }}" target="_blank">
+                        Version {{ forloop.counter }} – {{ doc.uploaded_at|date:"d M Y H:i" }}
+                    </a>
+                    {% if doc.uploaded_by %}
+                        <span class="text-muted small">
+                            by {{ doc.uploaded_by.user.get_full_name|default:doc.uploaded_by.user.username }}
+                        </span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted mb-0">No files uploaded yet.</p>
+        {% endif %}
     </div>
+</div>
 
-    <button type="submit" class="btn btn-primary">Save decision</button>
-    <a href="{% url 'coordinator_proposals' %}" class="btn btn-secondary">Back to list</a>
-  </form>
-{% endif %}
+<!-- ===== Decision Section ===== -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="mb-3">🧑‍🏫 Coordinator Decision</h5>
+
+        {% if is_hod_readonly %}
+            <p>
+                <strong>Status:</strong> {{ proposal.get_status_display }}<br>
+                <strong>Comment:</strong>
+                <span class="text-muted" style="white-space: pre-wrap;">
+                    {{ proposal.coordinator_comment|default:"(No comment)" }}
+                </span>
+            </p>
+
+            <a href="{% url 'hod_proposal_list' %}" class="btn btn-secondary">
+                Back
+            </a>
+
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label">Proposal Status</label>
+                    <select name="status" class="form-select" required>
+                        {% for value,label in status_choices %}
+                            <option value="{{ value }}" {% if proposal.status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Assign Mentor (optional)</label>
+                    <select name="mentor_id" class="form-select">
+                        <option value="">— No mentor assigned —</option>
+                        {% for f in possible_mentors %}
+                            <option value="{{ f.id }}"
+                                {% if proposal.team.mentor and proposal.team.mentor.id == f.id %}selected{% endif %}>
+                                {{ f.user.get_full_name|default:f.user.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">
+                        Select a mentor when approving the proposal.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Coordinator Comment</label>
+                    <textarea name="coordinator_comment"
+                              rows="3"
+                              class="form-control">{{ proposal.coordinator_comment }}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Save Decision
+                </button>
+                <a href="{% url 'coordinator_proposals' %}" class="btn btn-outline-secondary ms-2">
+                    Cancel
+                </a>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
 {% endblock %}

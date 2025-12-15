@@ -2,88 +2,142 @@
 {% block title %}HOD Proposals{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Project Proposals (HOD)</h3>
 
+<!-- ===== Page Header ===== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold">📑 Project Proposals</h3>
+    <a href="{% url 'hod_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        ← Back to HOD Dashboard
+    </a>
+</div>
+
+<!-- ===== Alerts ===== -->
 {% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
-  {% endfor %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} py-2">
+            {{ message }}
+        </div>
+    {% endfor %}
 {% endif %}
 
-<p class="mb-2">
-  <strong>HOD:</strong>
-  {{ faculty.user.get_full_name|default:faculty.user.username }}
-  ({{ faculty.department.name }})
-</p>
+<!-- ===== HOD Info ===== -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <p class="mb-0">
+            <strong>HOD:</strong>
+            {{ faculty.user.get_full_name|default:faculty.user.username }}
+            <span class="text-muted">
+                ({{ faculty.department.name }})
+            </span>
+        </p>
+    </div>
+</div>
 
-<form method="get" class="row g-2 mb-3">
-  <div class="col-md-3">
-    <select name="status" class="form-select">
-      <option value="">All statuses</option>
-      {% for value,label in status_choices %}
-        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
-          {{ label }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
+<!-- ===== Filters ===== -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
 
-  <div class="col-md-3">
-    <select name="batch" class="form-select">
-      <option value="">All batches</option>
-      {% for batch_id, batch_name in batches %}
-        <option value="{{ batch_id }}" {% if selected_batch == batch_id %}selected{% endif %}>
-          {{ batch_name }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
+            <div class="col-md-3">
+                <label class="form-label small">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All statuses</option>
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-  <div class="col-md-3">
-    <input type="text" name="q" class="form-control" placeholder="Search by team or title"
-           value="{{ search_query }}">
-  </div>
+            <div class="col-md-3">
+                <label class="form-label small">Batch</label>
+                <select name="batch" class="form-select">
+                    <option value="">All batches</option>
+                    {% for batch_id, batch_name in batches %}
+                        <option value="{{ batch_id }}" {% if selected_batch == batch_id %}selected{% endif %}>
+                            {{ batch_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-  <div class="col-md-2">
-    <button type="submit" class="btn btn-primary w-100">Filter</button>
-  </div>
-  <div class="col-md-1">
-    <a href="{% url 'hod_proposal_list' %}" class="btn btn-secondary w-100">Clear</a>
-  </div>
-</form>
+            <div class="col-md-4">
+                <label class="form-label small">Search</label>
+                <input type="text"
+                       name="q"
+                       class="form-control"
+                       placeholder="Team name or proposal title"
+                       value="{{ search_query }}">
+            </div>
 
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">
+                    Filter
+                </button>
+            </div>
+
+            <div class="col-md-1">
+                <a href="{% url 'hod_proposal_list' %}" class="btn btn-secondary w-100">
+                    Clear
+                </a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- ===== Proposals Table ===== -->
 {% if proposals %}
-  <table class="table table-sm table-hover">
-    <thead>
-      <tr>
-        <th>Team</th>
-        <th>Class</th>
-        <th>Batch</th>
-        <th>Title</th>
-        <th>Status</th>
-        <th>Last updated</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for prop in proposals %}
-        <tr>
-          <td>{{ prop.team.name }}</td>
-          <td>{{ prop.team.class_section.name }}</td>
-          <td>{{ prop.team.batch.name }}</td>
-          <td>{{ prop.title|default:"(no title)" }}</td>
-          <td>{{ prop.get_status_display }}</td>
-          <td>{{ prop.updated_at|date:"d M Y H:i" }}</td>
-          <td>
-            <a href="{% url 'hod_proposal_detail' prop.id %}" class="btn btn-sm btn-outline-primary">
-              View
-            </a>
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Team</th>
+                        <th>Class</th>
+                        <th>Batch</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Last Updated</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prop in proposals %}
+                        <tr>
+                            <td>{{ prop.team.name }}</td>
+                            <td>{{ prop.team.class_section.name }}</td>
+                            <td>{{ prop.team.batch.name }}</td>
+                            <td>{{ prop.title|default:"(No title)" }}</td>
+                            <td>
+                                {% if prop.status == "APPROVED" %}
+                                    <span class="badge bg-success">{{ prop.get_status_display }}</span>
+                                {% elif prop.status == "REJECTED" %}
+                                    <span class="badge bg-danger">{{ prop.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">{{ prop.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ prop.updated_at|date:"d M Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'hod_proposal_detail' prop.id %}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
 {% else %}
-  <p class="text-muted">No proposals found for your filters.</p>
+    <p class="text-muted">No proposals found for the selected filters.</p>
 {% endif %}
+
 {% endblock %}

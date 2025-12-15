@@ -4,47 +4,79 @@
 {% block title %}Advisor Dashboard{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Advisor Dashboard</h3>
 
-<p class="mb-3">
-  Welcome, {{ faculty.user.get_full_name|default:faculty.user.username }}.
-  You are advisor for {{ faculty.department.name }}.
-</p>
+<!-- ===== Header ===== -->
+<div class="mb-4">
+    <h3 class="fw-semibold">📘 Advisor Dashboard</h3>
+    <p class="text-muted mb-0">
+        Welcome,
+        <strong>{{ faculty.user.get_full_name|default:faculty.user.username }}</strong>
+        <br>
+        Department: {{ faculty.department.name }}
+    </p>
+</div>
 
-<table class="table table-sm table-hover">
-  <thead>
-    <tr>
-      <th>Student</th>
-      <th>Roll no</th>
-      <th>Class</th>
-      <th>Team</th>
-      <th>Project title</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for s in students %}
-    {% with teams=s.teams.all %}
-      {% if teams %}
-        {% for t in teams %}
-          <tr>
-            <td>{{ s.user.get_full_name|default:s.user.username }}</td>
-            <td>{{ s.roll_number }}</td>
-            <td>{{ s.class_section.name }}</td>
-            \<td>{{ t.name }}{% if t.team_id_code %} ({{ t.team_id_code }}){% endif %}</td>
-            <td>{{ t.proposal.title|default:"(no proposal)" }}</td>
-          </tr>
-        {% endfor %}
-      {% else %}
-        <tr>
-          <td>{{ s.user.get_full_name|default:s.user.username }}</td>
-          <td>{{ s.roll_number }}</td>
-          <td>{{ s.class_section.name }}</td>
-          <td>-</td>
-          <td>-</td>
-        </tr>
-      {% endif %}
-    {% endwith %}
-  {% endfor %}
-</tbody>
-</table>
+<!-- ===== Students Table ===== -->
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <h5 class="mb-3">👨‍🎓 Assigned Students</h5>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student</th>
+                        <th>Roll No</th>
+                        <th>Class</th>
+                        <th>Team</th>
+                        <th>Project Title</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for s in students %}
+                    {% with teams=s.teams.all %}
+                        {% if teams %}
+                            {% for t in teams %}
+                            <tr>
+                                <td>
+                                    {{ s.user.get_full_name|default:s.user.username }}
+                                </td>
+                                <td>{{ s.roll_number }}</td>
+                                <td>{{ s.class_section.name }}</td>
+                                <td>
+                                    {{ t.name }}
+                                    {% if t.team_id_code %}
+                                        <span class="text-muted">({{ t.team_id_code }})</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ t.proposal.title|default:"— No proposal submitted —" }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr class="text-muted">
+                                <td>{{ s.user.get_full_name|default:s.user.username }}</td>
+                                <td>{{ s.roll_number }}</td>
+                                <td>{{ s.class_section.name }}</td>
+                                <td>—</td>
+                                <td>—</td>
+                            </tr>
+                        {% endif %}
+                    {% endwith %}
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-3">
+                            No students assigned.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
 {% endblock %}

@@ -3,83 +3,165 @@
 
 {% block content %}
 
+<!-- ===== Page Header ===== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold">📄 Project Proposal</h3>
+    <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        ← Back to Dashboard
+    </a>
+</div>
 
+<!-- ===== Alerts ===== -->
 {% if messages %}
     {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} py-2">{{ message }}</div>
+        <div class="alert alert-{{ message.tags }} py-2">
+            {{ message }}
+        </div>
     {% endfor %}
 {% endif %}
 
-<p class="mb-2"><strong>Team:</strong> {{ team.name }}</p>
+<!-- ===== Team Info ===== -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <p class="mb-0">
+            <strong>Team:</strong> {{ team.name }}
+        </p>
+    </div>
+</div>
 
 {% if is_leader %}
+
+<!-- ===== Proposal Form ===== -->
 <form method="post" enctype="multipart/form-data">
+
     {% csrf_token %}
 
-    <div class="mb-3">
-        <label class="form-label">Title</label>
-        <input type="text" name="title" class="form-control"
-               value="{{ proposal.title }}" required>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+
+            <h5 class="mb-3">Proposal Details</h5>
+
+            <div class="mb-3">
+                <label class="form-label">Title</label>
+                <input type="text"
+                       name="title"
+                       class="form-control"
+                       value="{{ proposal.title }}"
+                       required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Problem Statement</label>
+                <textarea name="problem_statement"
+                          rows="5"
+                          class="form-control"
+                          required>{{ proposal.problem_statement }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Objectives</label>
+                <textarea name="objectives"
+                          rows="3"
+                          class="form-control">{{ proposal.objectives }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Domain / Technology</label>
+                <input type="text"
+                       name="domain"
+                       class="form-control"
+                       value="{{ proposal.domain }}">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Expected Outcomes</label>
+                <textarea name="expected_outcomes"
+                          rows="3"
+                          class="form-control">{{ proposal.expected_outcomes }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Estimated Duration (weeks)</label>
+                <input type="number"
+                       name="estimated_duration_weeks"
+                       min="1"
+                       class="form-control"
+                       value="{{ proposal.estimated_duration_weeks }}">
+            </div>
+
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Problem statement</label>
-        <textarea name="problem_statement" rows="5"
-                  class="form-control" required>{{ proposal.problem_statement }}</textarea>
+    <!-- ===== File Upload ===== -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Upload Proposal Document</h5>
+
+            <div class="mb-3">
+                <input type="file"
+                       name="proposal_pdf"
+                       class="form-control"
+                       accept="application/pdf">
+                <div class="form-text">
+                    Upload only PDF files. Each upload is saved as a new version.
+                </div>
+            </div>
+
+            <h6 class="mt-4">Uploaded Versions</h6>
+
+            {% if proposal.documents.all %}
+                <ul class="list-group list-group-flush">
+                    {% for doc in proposal.documents.all %}
+                        <li class="list-group-item px-0">
+                            <a href="{{ doc.file.url }}" target="_blank">
+                                📎 Version {{ forloop.counter }}
+                            </a>
+                            <span class="text-muted small">
+                                ({{ doc.uploaded_at|date:"d M Y H:i" }})
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">No files uploaded yet.</p>
+            {% endif %}
+        </div>
     </div>
 
-        <div class="mb-3">
-        <label class="form-label">Objectives</label>
-        <textarea name="objectives" rows="3"
-                  class="form-control">{{ proposal.objectives }}</textarea>
+    <!-- ===== Actions ===== -->
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            💾 Save Proposal
+        </button>
+        <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">
+            Cancel
+        </a>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Domain / technology</label>
-        <input type="text" name="domain" class="form-control"
-               value="{{ proposal.domain }}">
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Expected outcomes</label>
-        <textarea name="expected_outcomes" rows="3"
-                  class="form-control">{{ proposal.expected_outcomes }}</textarea>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Estimated duration (weeks)</label>
-        <input type="number" name="estimated_duration_weeks" min="1"
-               class="form-control"
-               value="{{ proposal.estimated_duration_weeks }}">
-    </div>
-        <div class="mb-3">
-        <label class="form-label">Upload proposal PDF</label>
-        <input type="file" name="proposal_pdf" class="form-control" accept="application/pdf">
-        <div class="form-text">Upload only PDF. Each upload is stored as a new version.</div>
-    </div>
-
-    <h5 class="mt-4">Uploaded versions</h5>
-    {% if proposal.documents.all %}
-        <ul>
-            {% for doc in proposal.documents.all %}
-                <li>
-                    <a href="{{ doc.file.url }}" target="_blank">
-                        Version {{ forloop.counter }} ({{ doc.uploaded_at|date:"d M Y H:i" }})
-                    </a>
-                </li>
-            {% endfor %}
-    {% else %}
-        <p class="text-muted">No files uploaded yet.</p>
-    {% endif %}
-
-
-    <button type="submit" class="btn btn-primary">Save proposal</button>
-    <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">Back</a>
 </form>
+
 {% else %}
-    <p><strong>Title:</strong> {{ proposal.title|default:"Not set" }}</p>
-    <p><strong>Problem statement:</strong></p>
-    <p>{{ proposal.problem_statement|default:"Not set" }}</p>
-    <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">Back</a>
+
+<!-- ===== Read-only View for Members ===== -->
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <h5 class="mb-3">Proposal Details</h5>
+
+        <p><strong>Title:</strong> {{ proposal.title|default:"Not set" }}</p>
+
+        <p><strong>Problem Statement:</strong></p>
+        <p class="text-muted" style="white-space: pre-wrap;">
+            {{ proposal.problem_statement|default:"Not set" }}
+        </p>
+
+        <a href="{% url 'student_dashboard' %}" class="btn btn-secondary mt-2">
+            Back
+        </a>
+
+    </div>
+</div>
+
 {% endif %}
+
 {% endblock %}

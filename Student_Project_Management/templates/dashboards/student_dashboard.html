@@ -2,220 +2,227 @@
 {% block title %}Student Dashboard{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Student Dashboard</h3>
 
-<p class="mb-1"><strong>Name:</strong> {{ student.user.get_full_name|default:student.user.username }}</p>
-<p class="mb-1"><strong>Roll:</strong> {{ student.roll_number }}</p>
-<p class="mb-1"><strong>Department:</strong> {{ student.department.name }}</p>
-<p class="mb-1"><strong>Class:</strong> {{ student.class_section.name }}</p>
-<p class="mb-3"><strong>Batch:</strong> {{ student.batch.name }}</p>
+<!-- ===== Header ===== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold">🎓 Student Dashboard</h3>
+</div>
 
-<h5 class="mt-4">Invitations</h5>
+<!-- ===== Student Info Card ===== -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <h5 class="mb-3">Student Information</h5>
+        <div class="row">
+            <div class="col-md-6 mb-2"><strong>Name:</strong> {{ student.user.get_full_name|default:student.user.username }}</div>
+            <div class="col-md-6 mb-2"><strong>Roll:</strong> {{ student.roll_number }}</div>
+            <div class="col-md-6 mb-2"><strong>Department:</strong> {{ student.department.name }}</div>
+            <div class="col-md-6 mb-2"><strong>Class:</strong> {{ student.class_section.name }}</div>
+            <div class="col-md-6 mb-2"><strong>Batch:</strong> {{ student.batch.name }}</div>
+        </div>
+    </div>
+</div>
 
-<form method="post" action="{% url 'send_invite' %}" class="row g-2 mb-3">
-  {% csrf_token %}
-  <div class="col-8 col-md-6">
-    <input type="text"
-           name="roll_number"
-           class="form-control"
-           placeholder="Enter friend’s roll number"
-           required>
-  </div>
-  <div class="col-4 col-md-2">
-    <button type="submit" class="btn btn-sm btn-primary w-100">
-      Send invite
-    </button>
-  </div>
-</form>
+<!-- ===== Invitations ===== -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <h5 class="mb-3">🤝 Invitations</h5>
 
-{# ===== Received invitations ===== #}
-<h6 class="mb-2">Received invitations</h6>
-{% if invitations %}
-  <table class="table table-sm table-hover">
-    <thead>
-      <tr>
-        <th>From</th>
-        <th>Team name</th>
-        <th>Message</th>
-        <th>Sent at</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for inv in invitations %}
-        <tr>
-          <td>{{ inv.from_student.user.get_full_name|default:inv.from_student.user.username }}</td>
-          <td>{{ inv.team_name }}</td>
-          <td>{{ inv.message|default:"-" }}</td>
-          <td>{{ inv.created_at|date:"d M Y H:i" }}</td>
-          <td>
-            {% if inv.status == "PENDING" %}
-              <a href="{% url 'respond_invite' inv.id 'accept' %}"
-                 class="btn btn-sm btn-success me-1">Accept</a>
-              <a href="{% url 'respond_invite' inv.id 'reject' %}"
-                 class="btn btn-sm btn-outline-danger">Reject</a>
-            {% else %}
-              {{ inv.get_status_display }}
-            {% endif %}
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% else %}
-  <p class="text-muted mb-3">No received invitations right now.</p>
-{% endif %}
+        <form method="post" action="{% url 'send_invite' %}" class="row g-2 mb-3">
+            {% csrf_token %}
+            <div class="col-md-6">
+                <input type="text"
+                       name="roll_number"
+                       class="form-control"
+                       placeholder="Enter friend’s roll number"
+                       required>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    Send Invite
+                </button>
+            </div>
+        </form>
 
-{# ===== Sent invitations ===== #}
-<h6 class="mb-2">Sent invitations</h6>
-{% if sent_invitations %}
-  <table class="table table-sm table-hover">
-    <thead>
-      <tr>
-        <th>To</th>
-        <th>Team name</th>
-        <th>Message</th>
-        <th>Sent at</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for inv in sent_invitations %}
-        <tr>
-          <td>{{ inv.to_student.user.get_full_name|default:inv.to_student.user.username }}</td>
-          <td>{{ inv.team_name }}</td>
-          <td>{{ inv.message|default:"-" }}</td>
-          <td>{{ inv.created_at|date:"d M Y H:i" }}</td>
-          <td>{{ inv.get_status_display }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% else %}
-  <p class="text-muted mb-3">No sent invitations yet.</p>
-{% endif %}
+        <!-- Received -->
+        <h6 class="mt-3">Received Invitations</h6>
+        {% if invitations %}
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>From</th>
+                        <th>Team</th>
+                        <th>Message</th>
+                        <th>Sent</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for inv in invitations %}
+                    <tr>
+                        <td>{{ inv.from_student.user.get_full_name|default:inv.from_student.user.username }}</td>
+                        <td>{{ inv.team_name }}</td>
+                        <td>{{ inv.message|default:"-" }}</td>
+                        <td>{{ inv.created_at|date:"d M Y H:i" }}</td>
+                        <td>
+                            {% if inv.status == "PENDING" %}
+                                <a href="{% url 'respond_invite' inv.id 'accept' %}"
+                                   class="btn btn-sm btn-success me-1">Accept</a>
+                                <a href="{% url 'respond_invite' inv.id 'reject' %}"
+                                   class="btn btn-sm btn-outline-danger">Reject</a>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ inv.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="text-muted">No received invitations.</p>
+        {% endif %}
 
-{# ===== Team and proposal block ===== #}
+        <!-- Sent -->
+        <h6 class="mt-4">Sent Invitations</h6>
+        {% if sent_invitations %}
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>To</th>
+                        <th>Team</th>
+                        <th>Message</th>
+                        <th>Sent</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for inv in sent_invitations %}
+                    <tr>
+                        <td>{{ inv.to_student.user.get_full_name|default:inv.to_student.user.username }}</td>
+                        <td>{{ inv.team_name }}</td>
+                        <td>{{ inv.message|default:"-" }}</td>
+                        <td>{{ inv.created_at|date:"d M Y H:i" }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ inv.get_status_display }}</span>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="text-muted">No sent invitations.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== Team Section ===== -->
 {% if team %}
-  <hr class="my-4">
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <h4 class="mb-3">👥 My Team</h4>
 
-  <h4 class="mb-2">My team</h4>
+        <p><strong>Name:</strong> {{ team.name }}</p>
+        <p><strong>Team ID:</strong> {{ team.team_id_code|default:"Not assigned" }}</p>
 
-  <p class="mb-1"><strong>Name:</strong> {{ team.name }}</p>
-  <p class="mb-1"><strong>Team ID:</strong> {{ team.team_id_code|default:"(not assigned)" }}</p>
+        <p>
+            <strong>Members:</strong><br>
+            {% for member in team.members.all %}
+                • {{ member.user.get_full_name|default:member.user.username }}
+                {% if member.id == student.id %}(You){% endif %}
+                {% if team.team_leader_id == member.id %} <span class="badge bg-warning text-dark">TL</span>{% endif %}
+                <br>
+            {% endfor %}
+        </p>
 
-  <p class="mb-1">
-    <strong>Members:</strong>
-    {% for member in team.members.all %}
-      {% if member.id == student.id %}
-        {{ member.user.get_full_name|default:member.user.username }} (You{% if team.team_leader_id == member.id %}, TL{% endif %})
-      {% else %}
-        {{ member.user.get_full_name|default:member.user.username }}{% if team.team_leader_id == member.id %} (TL){% endif %}
-      {% endif %}
-      {% if not forloop.last %}, {% endif %}
-    {% endfor %}
-  </p>
+        <p>
+            <strong>Status:</strong>
+            {% if team.proposal and team.proposal.status == "APPROVED" %}
+                <span class="badge bg-success">Approved</span>
+            {% elif team.proposal %}
+                <span class="badge bg-warning text-dark">{{ team.proposal.get_status_display }}</span>
+            {% else %}
+                <span class="badge bg-secondary">Proposal not created</span>
+            {% endif %}
+        </p>
+    </div>
+</div>
 
-  <p class="mb-2">
-  <strong>Status:</strong>
-  {% if team.proposal and team.proposal.status == "APPROVED" %}
-    Approved
-  {% elif team.proposal %}
-    {{ team.proposal.get_status_display }}
-  {% else %}
-    Proposal not created
-  {% endif %}
-</p>
+<!-- ===== Proposal ===== -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <h5>📄 Project Proposal</h5>
 
+        {% if team.proposal %}
+            <p><strong>Title:</strong> {{ team.proposal.title|default:"Not set" }}</p>
+            <p><strong>Coordinator Comment:</strong><br>
+                <span class="text-muted">{{ team.proposal.coordinator_comment|default:"None" }}</span>
+            </p>
 
-  <h5 class="mt-3">Project proposal</h5>
-  <p class="mb-1">
-    <strong>Proposal:</strong>
-    {% if team.proposal %}
-      {{ team.proposal.title|default:"Not set" }} – {{ team.proposal.get_status_display }}
-    {% else %}
-      Not created yet
-    {% endif %}
-  </p>
+            <p><strong>Documents:</strong></p>
+            <ul>
+                {% for doc in team.proposal.documents.all %}
+                    <li>
+                        <a href="{{ doc.file.url }}" target="_blank">
+                            Version {{ doc.version }} – {{ doc.uploaded_at|date:"d M Y H:i" }}
+                        </a>
+                    </li>
+                {% empty %}
+                    <li class="text-muted">No documents uploaded</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">Proposal not created yet.</p>
+        {% endif %}
+    </div>
+</div>
 
-  {% if team.proposal %}
-    <p class="mb-2">
-      <strong>Coordinator comment:</strong>
-      <span style="white-space: pre-wrap;">{{ team.proposal.coordinator_comment|default:"(none)" }}</span>
-    </p>
+<!-- ===== Reviews ===== -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5>🗓 Review Schedule</h5>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Review</th>
+                        <th>Date</th>
+                        <th>Requirements</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0th Review</td>
+                        <td>{{ team.proposal.updated_at|date:"d M Y"|default:"-" }}</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>1st Review</td>
+                        <td>{{ first_review.date|date:"d M Y"|default:"-" }}</td>
+                        <td>{{ first_review.requirements|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td>2nd Review</td>
+                        <td>{{ second_review.date|date:"d M Y"|default:"-" }}</td>
+                        <td>{{ second_review.requirements|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td>Final Review</td>
+                        <td>{{ final_review.date|date:"d M Y"|default:"-" }}</td>
+                        <td>{{ final_review.requirements|default:"-" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-    <p class="mb-1"><strong>Uploaded documents:</strong></p>
-    <ul class="mb-2">
-      {% for doc in team.proposal.documents.all %}
-        <li>
-          <a href="{{ doc.file.url }}" target="_blank">
-            Version {{ doc.version }} – {{ doc.uploaded_at|date:"d M Y H:i" }}
-          </a>
-        </li>
-      {% empty %}
-        <li class="text-muted">No documents uploaded yet.</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-
-  <h5 class="mt-4">Review schedule</h5>
-  <table class="table table-sm">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Date</th>
-        <th>Requirements</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>0th review (proposal)</td>
-        <td>
-          {% if team.proposal and team.proposal.status == "APPROVED" %}
-            {{ team.proposal.updated_at|date:"d M Y" }}
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td>-</td>
-      </tr>
-      <tr>
-        <td>1st review</td>
-        <td>
-          {% if first_review and first_review.date %}
-            {{ first_review.date|date:"d M Y" }}
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td>{{ first_review.requirements|default:"-" }}</td>
-      </tr>
-      <tr>
-        <td>2nd review</td>
-        <td>
-          {% if second_review and second_review.date %}
-            {{ second_review.date|date:"d M Y" }}
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td>{{ second_review.requirements|default:"-" }}</td>
-      </tr>
-      <tr>
-        <td>Final (3rd) review</td>
-        <td>
-          {% if final_review and final_review.date %}
-            {{ final_review.date|date:"d M Y" }}
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td>{{ final_review.requirements|default:"-" }}</td>
-      </tr>
-    </tbody>
-  </table>
 {% else %}
-  <hr class="my-4">
-  <p class="text-muted">You are not in a team yet.</p>
+<div class="alert alert-info">
+    You are not part of a team yet.
+</div>
 {% endif %}
+
 {% endblock %}
