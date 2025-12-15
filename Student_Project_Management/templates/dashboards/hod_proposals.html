@@ -100,6 +100,7 @@
                         <th>Class</th>
                         <th>Batch</th>
                         <th>Title</th>
+                        <th>Mentor</th>
                         <th>Status</th>
                         <th>Last Updated</th>
                         <th></th>
@@ -113,6 +114,13 @@
                             <td>{{ prop.team.batch.name }}</td>
                             <td>{{ prop.title|default:"(No title)" }}</td>
                             <td>
+                                {% if prop.team.mentor %}
+                                    {{ prop.team.mentor.user.get_full_name|default:prop.team.mentor.user.username }}
+                                {% else %}
+                                    <span class="text-muted">Not assigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
                                 {% if prop.status == "APPROVED" %}
                                     <span class="badge bg-success">{{ prop.get_status_display }}</span>
                                 {% elif prop.status == "REJECTED" %}
@@ -123,9 +131,10 @@
                             </td>
                             <td>{{ prop.updated_at|date:"d M Y H:i" }}</td>
                             <td>
-                                <a href="{% url 'hod_proposal_detail' prop.id %}"
-                                   class="btn btn-sm btn-outline-primary">
-                                    View
+                                <a href="{% url 'hod_proposal_detail' prop.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                <a href="{% url 'coordinator_team_reviews' prop.team.id %}"
+                                    class="btn btn-sm btn-outline-secondary ms-1">
+                                        Manage Reviews
                                 </a>
                             </td>
                         </tr>

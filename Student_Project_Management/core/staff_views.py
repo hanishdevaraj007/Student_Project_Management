@@ -155,13 +155,32 @@ def coordinator_proposal_detail(request, proposal_id):
     }
     return render(request, "dashboards/coordinator_proposal_detail.html", context)
 
+def require_coordinator_or_hod(user: User):
+    """
+    Return (faculty_profile, error_response).
+    Allows either:
+      - Faculty with is_coordinator=True, or
+      - Faculty with is_hod=True.
+    """
+    if user.user_type != User.UserType.FACULTY and user.user_type != User.UserType.HOD:
+        return None, redirect("dashboardredirect")
+
+    try:
+        faculty = FacultyProfile.objects.get(user=user)
+    except FacultyProfile.DoesNotExist:
+        return None, redirect("dashboardredirect")
+
+    if getattr(faculty, "is_coordinator", False) or getattr(faculty, "is_hod", False):
+        return faculty, None
+
+    return None, redirect("dashboardredirect")
+
+
 @login_required
 def coordinator_team_reviews(request, team_id):
-    """
-    Coordinator: see all reviews (1st/2nd/final) for a team.
-    """
+    """Coordinator/HOD see all reviews (1st/2nd/final) for a team."""
     user: User = request.user
-    faculty, error_response = _require_coordinator(user)
+    faculty, error_response = require_coordinator_or_hod(user)
     if error_response:
         return error_response
 
@@ -183,7 +202,7 @@ def coordinator_team_reviews(request, team_id):
 @login_required
 def coordinator_edit_review(request, team_id, review_type):
     user: User = request.user
-    faculty, error_response = _require_coordinator(user)
+    faculty, error_response = require_coordinator_or_hod(user)
     if error_response:
         return error_response
 

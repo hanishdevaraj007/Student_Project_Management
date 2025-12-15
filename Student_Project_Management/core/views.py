@@ -115,6 +115,17 @@ def student_dashboard(request):
         from_student=student
     ).order_by("-created_at")
 
+     # How many of MY sent invites are accepted?
+    accepted_invites_count = Invitation.objects.filter(
+        from_student=student,
+        status="ACCEPTED",
+    ).count()
+
+    # TL can create team only if:
+    # - not already in a team
+    # - has 2 or 3 accepted invites (so team size = 3 or 4 including TL)
+    can_create_team = (not already_in_team) and (2 <= accepted_invites_count <= 3)
+
     context = {
         "student": student,
         "team": team,
@@ -124,6 +135,8 @@ def student_dashboard(request):
         "first_review": first_review,
         "second_review": second_review,
         "final_review": final_review,
+        "accepted_invites_count": accepted_invites_count,
+        "can_create_team": can_create_team,
     }
     return render(request, "dashboards/student_dashboard.html", context)
 
