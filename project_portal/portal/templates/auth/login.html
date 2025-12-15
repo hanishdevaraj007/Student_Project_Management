@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Login - Project Portal{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 70vh;">
+    <div class="card" style="width: 100%; max-width: 400px;">
+        <div class="card-header text-center">
+            <h4>Project Portal Login</h4>
+        </div>
+        <div class="card-body">
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <a class="nav-link {% if login_type == 'faculty' %}active{% endif %}"
+                       href="?type=faculty">Faculty / Admin</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if login_type == 'student' %}active{% endif %}"
+                       href="?type=student">Student</a>
+                </li>
+            </ul>
+
+            <!-- Faculty / Admin form -->
+            {% if login_type == 'faculty' %}
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                <input type="hidden" name="login_type" value="faculty">
+                <div class="mb-3">
+                    {{ form.username }}
+                </div>
+                <div class="mb-3">
+                    {{ form.password }}
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+            </form>
+            {% endif %}
+
+            <!-- Student form -->
+            {% if login_type == 'student' %}
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                <input type="hidden" name="login_type" value="student">
+                <div class="mb-3">
+                    {{ form.roll_number }}
+                </div>
+                <div class="mb-3">
+                    {{ form.password }}
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+            </form>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Principal Dashboard{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">👑 Principal Dashboard - System Overview</h3>
+
+<!-- Summary Card -->
+<div class="card">
+    <div class="card-header">System Summary</div>
+    <div class="card-body">
+        <div class="info-row">
+            <div class="info-label">Total Teams:</div>
+            <div class="info-value">{{ all_teams.count }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Total Reviews:</div>
+            <div class="info-value">{{ all_reviews.count }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Freeze History Entries:</div>
+            <div class="info-value">{{ all_freeze_history.count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- All Teams Card -->
+<div class="card">
+    <div class="card-header">All Teams (Read-Only)</div>
+    <div class="card-body">
+        {% if all_teams %}
+            <div class="table-box">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Team Name</th>
+                            <th>Department</th>
+                            <th>Members</th>
+                            <th>Supervisor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for team in all_teams|slice:":20" %}
+                        <tr>
+                            <td>{{ team.name }}</td>
+                            <td>{{ team.department.name }}</td>
+                            <td>{{ team.get_member_count }}</td>
+                            <td>
+                                {% if team.supervisor %}
+                                    {{ team.supervisor.user.get_full_name|default:team.supervisor.user.username }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if all_teams.count > 20 %}
+                <p class="text-muted mt-3">Showing 20 of {{ all_teams.count }} teams.</p>
+            {% endif %}
+        {% else %}
+            <p class="text-muted">No teams in the system yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Freeze History Card -->
+<div class="card">
+    <div class="card-header">Recent Freeze History</div>
+    <div class="card-body">
+        {% if all_freeze_history %}
+            <div class="table-box">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Action</th>
+                            <th>By</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for history in all_freeze_history %}
+                        <tr>
+                            <td>{{ history.review.team.name }}</td>
+                            <td><span class="badge bg-info">{{ history.action }}</span></td>
+                            <td>{{ history.by.user.get_full_name|default:history.by.user.username }}</td>
+                            <td>{{ history.created_at|date:"d M Y H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No freeze history yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

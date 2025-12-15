@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Advisor Dashboard{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">📖 Advisor Dashboard</h3>
+
+<!-- Advisor Overview Card -->
+<div class="card">
+    <div class="card-header">Advisor Information</div>
+    <div class="card-body">
+        <div class="info-row">
+            <div class="info-label">Advisor Name:</div>
+            <div class="info-value">{{ advisor.user.get_full_name|default:advisor.user.username }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Department:</div>
+            <div class="info-value">{{ advisor.department.name }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Advisee Students Card -->
+<div class="card">
+    <div class="card-header">Advisee Students</div>
+    <div class="card-body text-muted">
+        <!-- TODO: Implement advisor-student mapping -->
+        <p>No advisee students assigned yet.</p>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty Dashboard{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">👨‍🏫 Faculty Dashboard</h3>
+
+<!-- Role Summary Card -->
+<div class="card">
+    <div class="card-header">Active Roles</div>
+    <div class="card-body">
+        <div class="gap-2">
+            {% if faculty.is_hod %}<span class="badge bg-danger">HoD</span>{% endif %}
+            {% if faculty.is_portal_coordinator %}<span class="badge bg-warning">Coordinator</span>{% endif %}
+            {% if faculty.is_supervisor %}<span class="badge bg-info">Supervisor</span>{% endif %}
+            {% if faculty.is_evaluator %}<span class="badge bg-primary">Evaluator</span>{% endif %}
+            {% if faculty.is_advisor %}<span class="badge bg-secondary">Advisor</span>{% endif %}
+            {% if faculty.is_principal %}<span class="badge bg-dark">Principal</span>{% endif %}
+            {% if not faculty.is_hod and not faculty.is_portal_coordinator and not faculty.is_supervisor and not faculty.is_evaluator and not faculty.is_advisor and not faculty.is_principal %}
+                <span class="text-muted">No active roles</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Supervised Teams Card -->
+{% if faculty.is_supervisor %}
+<div class="card">
+    <div class="card-header">My Supervised Teams</div>
+    <div class="card-body">
+        {% if supervised_teams %}
+            <div class="table-box">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Team Name</th>
+                            <th>Members</th>
+                            <th>Department</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for team in supervised_teams %}
+                        <tr>
+                            <td>{{ team.name }}</td>
+                            <td>{{ team.get_member_count }}</td>
+                            <td>{{ team.department.name }}</td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No supervised teams yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Assigned Evaluations Card -->
+{% if faculty.is_evaluator %}
+<div class="card">
+    <div class="card-header">My Evaluations</div>
+    <div class="card-body">
+        {% if evaluations %}
+            <div class="table-box">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Review Type</th>
+                            <th>Date</th>
+                            <th>Freeze State</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for review in evaluations %}
+                        <tr>
+                            <td>{{ review.team.name }}</td>
+                            <td>{{ review.get_review_type_display }}</td>
+                            <td>{{ review.date_time|date:"d M Y H:i"|default:"-" }}</td>
+                            <td><span class="badge bg-secondary">{{ review.hod_freeze_state }}</span></td>
+                            <td>
+                                {% if review.is_editable %}
+                                    <a href="{% url 'review_edit_sheet' review.id %}" class="btn btn-sm btn-primary">Fill</a>
+                                {% else %}
+                                    <a href="{% url 'review_detail' review.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No evaluations assigned yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

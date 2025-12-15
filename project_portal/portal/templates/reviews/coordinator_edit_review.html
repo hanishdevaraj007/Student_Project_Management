@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Fill Evaluation Sheet{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">✏️ {{ review.get_review_type_display }} - {{ review.team.name }}</h3>
+
+{% if not is_editable %}
+<div class="alert alert-warning">
+    This review is currently not available for editing. Please check the freeze state and review date.
+</div>
+{% endif %}
+
+<!-- Review Info Card -->
+<div class="card">
+    <div class="card-header">Review Information</div>
+    <div class="card-body">
+        <div class="info-row">
+            <div class="info-label">Date & Time:</div>
+            <div class="info-value">{{ review.date_time|date:"d M Y H:i"|default:"-" }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Freeze State:</div>
+            <div class="info-value"><span class="badge bg-secondary">{{ review.hod_freeze_state }}</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- Evaluation Sheet Card -->
+<div class="card">
+    <div class="card-header">Fill Evaluation Marks</div>
+    <div class="card-body">
+        {% if is_editable and rubric_items and students %}
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="table-box">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            {% for item in rubric_items %}
+                            <th title="{{ item.title }}">{{ item.title|truncatewords:2 }}</th>
+                            {% endfor %}
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.user.get_full_name|default:student.user.username }}</td>
+                            {% for item in rubric_items %}
+                            <td>
+                                <input type="number" class="form-control form-control-sm" min="0" max="{{ item.max_score }}" placeholder="0">
+                            </td>
+                            {% endfor %}
+                            <td><strong>0</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Submit Marks</button>
+                <a href="{% url 'faculty_dashboard' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+        {% else %}
+        <p class="text-muted">This evaluation sheet is not available for editing at this time.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

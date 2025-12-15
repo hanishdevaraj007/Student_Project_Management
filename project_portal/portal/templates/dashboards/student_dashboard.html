@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">📚 Student Dashboard</h3>
+
+<!-- Student Information Card -->
+<div class="card">
+    <div class="card-header">Student Information</div>
+    <div class="card-body">
+        <div class="info-row">
+            <div class="info-label">Name:</div>
+            <div class="info-value">{{ student.user.get_full_name|default:student.user.username }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Roll Number:</div>
+            <div class="info-value">{{ student.roll_number }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Department:</div>
+            <div class="info-value">{{ student.department.name }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Class:</div>
+            <div class="info-value">{{ student.class_section.name }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Batch:</div>
+            <div class="info-value">{{ student.batch.name }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Team Information Card -->
+{% if team %}
+<div class="card">
+    <div class="card-header">My Team</div>
+    <div class="card-body">
+        <div class="info-row">
+            <div class="info-label">Team Name:</div>
+            <div class="info-value">{{ team.name }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Members:</div>
+            <div class="info-value">
+                {% for member in team.members.all %}
+                    {{ member.user.get_full_name|default:member.user.username }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Supervisor:</div>
+            <div class="info-value">
+                {% if team.supervisor %}
+                    {{ team.supervisor.user.get_full_name|default:team.supervisor.user.username }}
+                {% else %}
+                    <span class="text-muted">Not assigned yet</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Proposal Card -->
+{% if proposal %}
+<div class="card">
+    <div class="card-header">Project Proposal</div>
+    <div class="card-body">
+        <div class="info-row">
+            <div class="info-label">Title:</div>
+            <div class="info-value">{{ proposal.title }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Status:</div>
+            <div class="info-value">
+                <span class="badge bg-secondary">{{ proposal.get_status_display }}</span>
+            </div>
+        </div>
+        {% if proposal.documents.exists %}
+        <div class="mt-3">
+            <strong>Documents:</strong>
+            <ul class="list-unstyled">
+                {% for doc in proposal.documents.all %}
+                    <li><a href="{{ doc.file.url }}">Version {{ doc.version }} - {{ doc.uploaded_at|date:"d M Y H:i" }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-muted">
+        No proposal submitted yet.
+    </div>
+</div>
+{% endif %}
+
+<!-- Review Schedule Card -->
+{% if reviews %}
+<div class="card">
+    <div class="card-header">Review Schedule</div>
+    <div class="card-body">
+        <div class="table-box">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Review</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for review in reviews %}
+                    <tr>
+                        <td>{{ review.get_review_type_display }}</td>
+                        <td>{{ review.date_time|date:"d M Y H:i"|default:"-" }}</td>
+                        <td><span class="badge bg-info">{{ review.hod_freeze_state }}</span></td>
+                        <td>
+                            {% if review.hod_freeze_state != 'hard_locked' %}
+                                <a href="{% url 'review_detail' review.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                            {% else %}
+                                <span class="text-muted">Locked</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    You are not part of a team yet. <a href="{% url 'create_team' %}" class="btn btn-sm btn-primary">Create Team</a>
+</div>
+{% endif %}
+
+{% endblock %}

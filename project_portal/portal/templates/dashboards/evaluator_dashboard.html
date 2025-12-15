@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluator Dashboard{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">✅ Evaluator Dashboard</h3>
+
+<!-- My Evaluations Card -->
+<div class="card">
+    <div class="card-header">My Assigned Evaluations</div>
+    <div class="card-body">
+        {% if evaluations %}
+            <div class="table-box">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Review Type</th>
+                            <th>Date</th>
+                            <th>Freeze State</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for review in evaluations %}
+                        <tr>
+                            <td>{{ review.team.name }}</td>
+                            <td>{{ review.get_review_type_display }}</td>
+                            <td>{{ review.date_time|date:"d M Y H:i"|default:"-" }}</td>
+                            <td><span class="badge bg-secondary">{{ review.hod_freeze_state }}</span></td>
+                            <td>
+                                {% if review.is_editable %}
+                                    <a href="{% url 'review_edit_sheet' review.id %}" class="btn btn-sm btn-primary">Fill</a>
+                                {% else %}
+                                    <a href="{% url 'review_detail' review.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No evaluations assigned yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Review Details{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">📋 {{ review.get_review_type_display }} - {{ review.team.name }}</h3>
+
+<!-- Review Info Card -->
+<div class="card">
+    <div class="card-header">Review Information</div>
+    <div class="card-body">
+        <div class="info-row">
+            <div class="info-label">Team:</div>
+            <div class="info-value">{{ review.team.name }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Review Type:</div>
+            <div class="info-value">{{ review.get_review_type_display }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Date & Time:</div>
+            <div class="info-value">{{ review.date_time|date:"d M Y H:i"|default:"-" }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Grace Days:</div>
+            <div class="info-value">{{ review.grace_days }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Freeze State:</div>
+            <div class="info-value"><span class="badge bg-secondary">{{ review.hod_freeze_state }}</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- Panel Marks Sheet Card -->
+<div class="card">
+    <div class="card-header">Evaluation Marks (Read-Only)</div>
+    <div class="card-body">
+        {% if rubric_items %}
+        <div class="table-box">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Rubric Item</th>
+                        <th>HoD</th>
+                        <th>Supervisor</th>
+                        <th>Evaluator 1</th>
+                        <th>Evaluator 2</th>
+                        <th>Average</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in rubric_items %}
+                    <tr>
+                        <td>{{ item.title }} ({{ item.max_score }})</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No rubric items defined for this review type yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
