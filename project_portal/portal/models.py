@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 # ========== Core Models ==========
 
+
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -61,8 +62,20 @@ class StudentProfile(models.Model):
 
 
 class FacultyProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='faculty_profile')
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="faculty_profile"
+    )
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
+
+    # NEW: for advisor to have exactly one section
+    advisor_class_section = models.OneToOneField(
+        "ClassSection",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="advisor_profile",
+        help_text="Class section for which this faculty is the project advisor.",
+    )
     
     # Role flags
     is_hod = models.BooleanField(default=False)
@@ -186,6 +199,28 @@ class Review(models.Model):
         unique_together = ('team', 'review_type')
         ordering = ['team', 'review_type']
 
+class ReviewRubric(models.Model):
+    """
+    Rubric rows for a given review type.
+
+    Example: for Review 1 there will be items like
+    "Problem Formulation", "Aim of the Project", etc., each with max_score 5.
+    """
+
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name="rubrics",
+    )
+    name = models.CharField(max_length=200)         # e.g. "Problem Formulation"
+    order = models.PositiveIntegerField(default=1)  # display order within sheet
+    max_score = models.PositiveIntegerField(default=5)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return f"{self.review} - {self.name}"
 
 class ManagementWindow(models.Model):
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
@@ -289,6 +324,29 @@ class ReviewFile(models.Model):
     class Meta:
         ordering = ['-version']
 
+#NEWELY ADDED
+
+class ReviewMark(models.Model):
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name="marks",
+    )
+    student = models.ForeignKey(
+        StudentProfile,
+        on_delete=models.CASCADE,
+        related_name="review_marks",
+    )
+    total_mark = models.PositiveIntegerField()
+    comment = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ("review", "student")
+
+    def __str__(self):
+        return f"{self.review} - {self.student.roll_number} - {self.total_mark}"
+
+
 
 # ========== Date Change History ==========
 
@@ -305,3 +363,35 @@ class DateChangeHistory(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class Invitation(models.Model):
+    """
+    TL invites students; they accept/reject.
+    """
+
+    from_student = models.ForeignKey(
+        StudentProfile,
+        related_name="sent_invitations",
+        on_delete=models.CASCADE,
+    )
+    to_student = models.ForeignKey(
+        StudentProfile,
+        related_name="received_invitations",
+        on_delete=models.CASCADE,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("ACCEPTED", "Accepted"),
+        ("REJECTED", "Rejected"),
+        ("EXPIRED", "Expired"),
+    ]
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+    )
+
+    def __str__(self):
+        return f"Invite {self.from_student} -> {self.to_student} ({self.status})"

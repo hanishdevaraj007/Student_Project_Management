@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout,get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
 from .models import (
-    StudentProfile, FacultyProfile, Team, Review, RubricTemplate, RubricItem, 
-    PanelEvaluation, FreezeHistory, ReviewFile, ProjectProposal, Department, Batch, ClassSection
+    StudentProfile, FacultyProfile, Team, Review, RubricTemplate, RubricItem,User,
+    PanelEvaluation, FreezeHistory, ReviewFile, ProjectProposal, Department, Batch, ClassSection, Invitation,ProposalDocument
 )
 from .forms import (
     StudentLoginForm, FacultyLoginForm, TeamForm, ReviewSetupForm, 
@@ -13,6 +13,34 @@ from .forms import (
 )
 from datetime import datetime, timedelta
 
+
+def home(request):
+    return redirect("login")  # exactly this string
+
+
+@login_required
+def dashboard_redirect(request):
+    user = request.user
+
+    # Try student profile
+    if StudentProfile.objects.filter(user=user).exists():
+        return redirect("student_dashboard")
+
+    # HOD / coordinator / advisor / supervisor etc. use FacultyProfile flags
+    faculty = FacultyProfile.objects.filter(user=user).first()
+    if faculty:
+        if faculty.is_hod:
+            return redirect("hod_dashboard")
+        if faculty.is_coordinator:
+            return redirect("coordinator_dashboard")
+        # advisor/supervisor/evaluator default faculty dashboard
+        return redirect("faculty_dashboard")
+
+    # Principal: simplest is check superuser or separate flag later
+    if user.is_superuser:
+        return redirect("principal_dashboard")
+
+    return redirect("login")
 
 
 def login_view(request):
@@ -120,6 +148,193 @@ def student_dashboard(request):
         'reviews': reviews,
     }
     return render(request, 'dashboards/student_dashboard.html', context)
+
+@login_required
+def proposal_view(request):
+    """
+    Student proposal create/update + document upload.
+    Only team leader can edit; members can view.
+    """
+    user: User = request.user
+    if user.user_type != User.UserType.STUDENT:
+        return redirect("dashboard_redirect")
+
+    # get student profile
+    student = get_object_or_404(StudentProfile, user=user)
+
+    # find team where this student is leader or member
+    team = (
+        Team.objects.select_related("department", "batch", "class_section")
+        .prefetch_related("members")
+        .filter(models.Q(team_leader=student) | models.Q(members=student))
+        .distinct()
+        .first()
+    )
+    if team is None:
+        messages.error(request, "You must be in a team to submit a proposal.")
+        return redirect("student_dashboard")
+
+    is_leader = (team.team_leader_id == student.id)
+    proposal, created = ProjectProposal.objects.get_or_create(team=team)
+
+    if request.method == "POST":
+        if not is_leader:
+            messages.error(request, "Only the team leader can edit the proposal.")
+            return redirect("proposal")
+
+        title = (request.POST.get("title") or "").strip()
+        problem = (request.POST.get("problem_statement") or "").strip()
+        objectives = (request.POST.get("objectives") or "").strip()
+        domain = (request.POST.get("domain") or "").strip()
+        expected = (request.POST.get("expected_outcomes") or "").strip()
+        duration_raw = (request.POST.get("estimated_duration_weeks") or "").strip()
+
+        if not title or not problem:
+            messages.error(request, "Title and problem statement are required.")
+            return redirect("proposal")
+
+        duration = None
+        if duration_raw:
+            try:
+                duration = int(duration_raw)
+            except ValueError:
+                messages.error(request, "Estimated duration must be a number.")
+                return redirect("proposal")
+
+        proposal.title = title
+        proposal.problem_statement = problem
+        proposal.objectives = objectives
+        proposal.domain = domain
+        proposal.expected_outcomes = expected
+        proposal.estimated_duration_weeks = duration
+        proposal.status = ProjectProposal.Status.PENDING
+        proposal.save()
+
+        pdf_file = request.FILES.get("proposal_pdf")
+        if pdf_file:
+            ProposalDocument.objects.create(
+                proposal=proposal,
+                file=pdf_file,
+                uploaded_by=student,
+            )
+
+        messages.success(request, "Proposal saved.")
+        return redirect("proposal")
+
+    context = {
+        "student": student,
+        "team": team,
+        "proposal": proposal,
+        "is_leader": is_leader,
+    }
+    return render(request, "dashboards/proposal.html", context)
+
+@login_required
+def send_invite(request):
+    """
+    Team leader sends invitation to another student using roll number.
+    """
+    user: User = request.user
+    if user.user_type != User.UserType.STUDENT:
+        return redirect("dashboard_redirect")
+
+    student = StudentProfile.objects.select_related(
+        "department", "batch", "class_section"
+    ).get(user=user)
+
+    if request.method != "POST":
+        return redirect("student_dashboard")
+
+    roll = (request.POST.get("roll_number") or "").strip().upper()
+    if not roll:
+        messages.error(request, "Roll number is required.")
+        return redirect("student_dashboard")
+
+    try:
+        target = StudentProfile.objects.select_related(
+            "department", "batch", "class_section", "user"
+        ).get(roll_number=roll)
+    except StudentProfile.DoesNotExist:
+        messages.error(request, "Student with that roll number does not exist.")
+        return redirect("student_dashboard")
+
+    if target == student:
+        messages.error(request, "You cannot invite yourself.")
+        return redirect("student_dashboard")
+
+    # Same department and batch check (simple version)
+    if student.department_id != target.department_id or student.batch_id != target.batch_id:
+        messages.error(
+            request,
+            "You can invite only students in your department and batch.",
+        )
+        return redirect("student_dashboard")
+
+    # Limit pending invitations to this target
+    pending_count = Invitation.objects.filter(
+        to_student=target,
+        status="PENDING",
+    ).count()
+    if pending_count >= 5:
+        messages.error(request, "This student already has 5 pending invitations.")
+        return redirect("student_dashboard")
+
+    # Avoid duplicate pending invite from same student to same target
+    existing = Invitation.objects.filter(
+        from_student=student,
+        to_student=target,
+        status="PENDING",
+    ).exists()
+    if existing:
+        messages.info(request, "You already sent an invitation to this student.")
+        return redirect("student_dashboard")
+
+    Invitation.objects.create(
+        from_student=student,
+        to_student=target,
+    )
+    messages.success(request, "Invitation sent.")
+    return redirect("student_dashboard")
+
+
+@login_required
+def respond_invite(request, invite_id, action):
+    """
+    Target student accepts or rejects an invitation.
+    """
+    user: User = request.user
+    if user.user_type != User.UserType.STUDENT:
+        return redirect("dashboard_redirect")
+
+    student = StudentProfile.objects.get(user=user)
+    invite = get_object_or_404(
+        Invitation,
+        id=invite_id,
+        to_student=student,
+    )
+
+    if invite.status != "PENDING":
+        messages.info(request, "This invitation is already processed.")
+        return redirect("student_dashboard")
+
+    if action == "accept":
+        # Expire other pending invites to this student
+        Invitation.objects.filter(
+            to_student=student,
+            status="PENDING",
+        ).exclude(id=invite.id).update(status="EXPIRED")
+
+        invite.status = "ACCEPTED"
+        invite.save()
+        messages.success(request, "Invitation accepted.")
+    elif action == "reject":
+        invite.status = "REJECTED"
+        invite.save()
+        messages.info(request, "Invitation rejected.")
+    else:
+        messages.error(request, "Invalid action.")
+    return redirect("student_dashboard")
+
 
 
 # ========== Faculty Dashboard ==========
@@ -282,7 +497,7 @@ def principal_dashboard(request):
 # ========== Team Management ==========
 
 @login_required
-def create_team(request):
+def create_team_view(request):
     """Create or edit team"""
     try:
         student = request.user.student_profile
